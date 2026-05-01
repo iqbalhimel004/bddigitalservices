@@ -1,0 +1,219 @@
+এই promptটা Replit Agent-এ paste করো:
+
+I want you to do a **final polish pass** on my existing Luxury Dark website redesign.
+
+The redesign direction is already much better, but it still needs refinement to feel truly premium, polished, and mobile-friendly.
+
+## Very Important
+
+* Do **not** change backend, data, routes, logic, product structure, filtering, search behavior, form behavior, FAQ functionality, payment flow, or WhatsApp flow.
+* Do **not** redesign from scratch.
+* Only improve the **existing UI** with a final premium polish.
+* Keep the current Luxury Dark direction and refine it.
+
+---
+
+## Main Goal
+
+Make the site feel:
+
+* more premium
+* more readable
+* more polished
+* more balanced on mobile
+* less cramped
+* more trustworthy and high-end
+
+---
+
+## Priority Fixes
+
+### 1) Improve typography scale, especially on mobile
+
+Text still feels too small in several places.
+
+Please increase text sizes slightly and improve hierarchy without making the UI oversized.
+
+#### Update these specifically:
+
+* Product titles: increase to around **18–20px on mobile**, stronger weight, better line-height
+* Product descriptions: increase slightly to around **14–15px on mobile**
+* FAQ question text: increase to around **17–18px on mobile**
+* FAQ answer text: slightly larger for readability
+* Section headings: stronger and more premium
+* Footer text: improve readability
+* Bangla text: make sure it is not too small and has proper line-height
+
+Important:
+Do not enlarge everything equally.
+Only improve hierarchy and readability in a balanced premium way.
+
+---
+
+### 2) Make product cards more compact and polished on mobile
+
+The card style is much better now, but some cards still feel a bit too long vertically.
+
+Please refine:
+
+* spacing inside cards
+* title-to-price spacing
+* description spacing
+* button spacing
+* badge size and placement
+* overall card rhythm
+
+#### Card improvements:
+
+* keep product title bigger
+* keep price strong
+* reduce excessive empty vertical space
+* clamp descriptions if needed
+* make cards easier to scan quickly on mobile
+
+---
+
+### 3) Fix floating Telegram and WhatsApp buttons
+
+These floating buttons are overlapping content on mobile and hurting the premium feel.
+
+Please fix this carefully.
+
+#### Requirements:
+
+* prevent overlap with forms, cards, FAQ, and footer content
+* reduce button size slightly on mobile
+* improve spacing between floating buttons
+* position them more elegantly
+* if needed, use one expandable floating contact button on mobile instead of two large overlapping circles
+
+This is a high-priority visual fix.
+
+---
+
+### 4) Polish header and mobile navbar
+
+The mobile header is improved, but it still feels a bit tight.
+
+Please refine:
+
+* logo text sizing and balance
+* CTA and menu icon alignment
+* header height and padding
+* sticky header shadow/border subtlety
+* overall spacing and visual balance
+
+Make the header feel clean, premium, and properly aligned.
+
+---
+
+### 5) Improve hero section polish
+
+The hero is better, but it can feel even more premium.
+
+Please refine:
+
+* headline width and line breaks
+* supporting paragraph length and readability
+* CTA spacing
+* trust stat card consistency
+* visual breathing room
+
+Keep the current structure, but make it feel more intentional and high-end.
+
+---
+
+### 6) Improve search bar, category pills, and filters on mobile
+
+These are functional, but still need premium polish.
+
+Please refine:
+
+* search bar height and readability
+* placeholder visibility
+* icon alignment
+* pill/tab spacing
+* active tab styling
+* horizontal scroll behavior if needed
+
+The controls should feel elegant, minimal, and touch-friendly.
+
+---
+
+### 7) Improve footer completeness
+
+The footer still feels a bit empty and unfinished.
+
+Please refine it into a more complete premium footer.
+
+Include or improve:
+
+* brand block
+* quick links if already available or can be added without changing data flow
+* contact/support presence
+* trust note
+* spacing
+* divider usage
+* muted typography hierarchy
+
+Also fix any inconsistent copyright year display.
+Make it consistent and clean.
+
+---
+
+### 8) Ensure section spacing consistency
+
+Please do a full pass on spacing and alignment across the site.
+
+Check for:
+
+* inconsistent section padding
+* heading/subtitle spacing mismatch
+* card grid spacing inconsistency
+* button spacing inconsistency
+* mobile edge padding inconsistency
+
+Everything should feel like one coherent design system.
+
+---
+
+## Button Hierarchy Refinement
+
+Keep the current premium button style, but refine hierarchy:
+
+* Violet should remain the main primary action color
+* WhatsApp green should still exist, but should not visually overpower everything
+* In product cards, the WhatsApp action should feel secondary to the main CTA
+* Use elegant sizing, spacing, and visual balance
+
+---
+
+## Final QA Pass
+
+After making the fixes above, do a final quality pass and polish anything that still looks template-like, cramped, inconsistent, or unfinished.
+
+Check especially for:
+
+* overly small text
+* inconsistent border radius
+* inconsistent shadows
+* inconsistent icon sizing
+* weak mobile readability
+* sections that still feel generic or cheap
+* places where spacing feels awkward
+
+---
+
+## Final Result Should Feel Like
+
+A **luxury dark premium digital storefront**:
+
+* elegant
+* readable
+* premium
+* trustworthy
+* modern
+* mobile-friendly
+* refined, not flashy
+
+Please implement the improvements directly in the existing codebase and keep the design system consistent across the entire site.

@@ -1,0 +1,121 @@
+Add a **theme switcher** to my website so users can switch between **Dark Mode** and **Light Mode** manually.
+
+## Goal
+
+I want the current homepage style to remain the **default Dark Mode**, and I want a new **Light Mode** option that users can toggle anytime.
+
+## Important
+
+* Do **not** change backend, routes, product data, filtering, search logic, forms, FAQ behavior, payment flow, or WhatsApp flow.
+* Do **not** redesign the whole site from scratch.
+* Keep the existing Luxury Dark design as the default theme.
+* Add a polished Light Mode version using the same premium design system.
+
+## Requirements
+
+### 1) Theme toggle
+
+* Add a clean theme toggle in the header/navbar
+* User should be able to switch between:
+
+  * Dark
+  * Light
+* The toggle should feel premium and match the site style
+* On mobile and desktop, it should be easy to access
+
+### 2) Default behavior
+
+* Default theme should be **Dark Mode**
+* If possible, also detect system preference on first visit
+* But once the user manually chooses a theme, remember that choice
+
+### 3) Persistence
+
+* Save the user’s selected theme in **localStorage**
+* On refresh or revisit, keep the selected theme active
+
+### 4) Implementation approach
+
+Refactor the site to use a theme system based on:
+
+* CSS variables or theme tokens
+* reusable shared colors
+* `data-theme="dark"` and `data-theme="light"` or an equivalent clean approach
+
+Do not leave colors hardcoded everywhere if avoidable.
+Make the code maintainable.
+
+### 5) Dark theme
+
+* Keep the current Luxury Dark look as the base
+* Preserve the premium dark visual identity
+* Only refactor it into a proper theme system
+
+### 6) Light theme
+
+Create a premium Light Mode version of the same design.
+
+The Light Mode should feel:
+
+* clean
+* elegant
+* premium
+* trustworthy
+* modern
+* soft, not harsh white
+
+Use a refined light palette such as:
+
+* background: soft off-white or very light gray
+* surfaces: white / elevated light cards
+* text: dark charcoal
+* muted text: soft gray
+* borders: subtle
+* accent: keep the same premium violet brand identity
+* WhatsApp green only where needed
+
+Avoid making Light Mode look plain or default-template.
+
+### 7) Themed components
+
+Make sure both themes work consistently for:
+
+* header
+* hero
+* buttons
+* cards
+* product grid
+* category pills
+* search bar
+* forms
+* payment section
+* FAQ
+* footer
+* floating buttons
+* badges
+* shadows
+* borders
+
+### 8) Accessibility
+
+* Ensure proper contrast in both themes
+* Text must remain readable
+* Inputs, buttons, pills, and cards should remain clear in both themes
+
+### 9) Smooth UX
+
+* Add a subtle smooth transition when switching themes
+* Do not over-animate
+* The switch should feel polished and premium
+
+### 10) Final polish
+
+After implementing the theme system, do a consistency pass so both dark and light versions feel like one brand.
+
+The final result should be:
+
+* premium in dark mode
+* premium in light mode
+* user-controlled
+* persistent across visits
+* cleanly implemented in the existing codebase
