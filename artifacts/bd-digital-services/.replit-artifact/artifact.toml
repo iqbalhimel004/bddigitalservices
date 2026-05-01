@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "BD Digital Services"
+version = "1.0.0"
+id = "artifacts/bd-digital-services"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18910
+
+[services.development]
+run = "pnpm --filter @workspace/bd-digital-services run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/bd-digital-services", "run", "build" ]
+publicDir = "artifacts/bd-digital-services/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18910"
+BASE_PATH = "/"
