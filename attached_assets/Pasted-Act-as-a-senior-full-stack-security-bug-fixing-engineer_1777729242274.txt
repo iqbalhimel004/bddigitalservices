@@ -1,0 +1,43 @@
+Act as a senior full-stack security bug-fixing engineer.
+
+For this step, fix ONLY these 3 issues. Do not work on any other bugs, warnings, UI redesign, refactor, or cleanup.
+
+1. Admin credential session invalidation:
+When admin credentials/password are changed, old existing admin sessions must no longer remain valid. Use or adjust the existing session system only as needed. Do not rewrite the full auth system.
+
+2. Bulk order status transition bypass:
+Bulk order status updates must follow the same server-side allowed transition rules as the single order status update. Invalid bulk transitions must be blocked, skipped, or safely reported without bypassing existing order rules.
+
+3. Logout route protection:
+Review and fix logout route protection so logout still works for legitimate logged-in admin users, but cannot be abused as an unprotected force-logout endpoint.
+
+Important rules:
+- Do not fix any other issue in this step.
+- Do not edit unrelated files.
+- Do not make unnecessary edits.
+- Do not remove existing features.
+- Do not redesign UI.
+- Do not rewrite authentication, order, or routing systems.
+- Do not change unrelated business logic.
+- Preserve all working functionality.
+- Fixes must work for both PC/Desktop and Mobile clients.
+- Verify related admin flows on both PC/Desktop and Mobile views where UI flow is involved.
+- Backend security behavior must be consistent for both PC/Desktop and Mobile clients.
+- Do not introduce new bugs, errors, conflicts, broken features, or security issues.
+- If anything is unclear or risky, do not guess; mention it in the report.
+
+After finishing, run existing checks/tests if available. If no automated test exists, manually verify through the current app flow and clearly report what was tested.
+
+Final report must include:
+1. Issues found
+2. Issues fixed
+3. Files changed
+4. Changes made
+5. PC/Desktop verification result
+6. Mobile verification result
+7. Backend/security verification result
+8. Not fixed and why
+9. Manual checking still needed
+10. Warnings/risks
+11. Confirmation that no unrelated edits were made
+12. Confirmation that no new issue was intentionally introduced
