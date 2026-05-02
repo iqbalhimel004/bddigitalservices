@@ -1,0 +1,45 @@
+Act as a senior frontend bug-fixing engineer.
+
+For this step, fix ONLY these 2 admin authentication stability issues:
+
+1. Hardcoded admin API paths:
+Review and fix hardcoded admin auth/logout API paths in the admin frontend where they can break in path-prefixed or proxy-based deployment. Keep existing auth and logout behavior working.
+
+2. Admin auth ready-state handling:
+Review admin pages that use the admin auth guard but do not properly wait for the auth ready state. Fix only the pages where protected admin UI may render before auth verification is complete.
+
+Important rules:
+- Do not fix any other issue in this step.
+- Do not rewrite the authentication system.
+- Do not change backend/API logic unless absolutely required.
+- Do not redesign UI.
+- Do not edit unrelated files.
+- Do not make unnecessary edits.
+- Do not remove existing features.
+- Do not change unrelated business logic.
+- Preserve all working functionality.
+- Fixes must work on both PC/Desktop and Mobile.
+- Verify related admin login, protected page access, and logout behavior on both PC/Desktop and Mobile views.
+- Do not introduce new bugs, errors, conflicts, broken features, or security issues.
+- If anything is unclear or risky, do not guess; mention it in the report.
+
+Expected behavior:
+- Logged-in admin users can access protected admin pages normally.
+- Logged-out users are redirected to login without briefly seeing protected admin page content.
+- Logout still works correctly.
+- Existing loading, success, and error states must not be broken.
+
+After finishing, run existing checks/tests if available. If no automated test exists, manually verify the current admin flow and clearly report what was tested.
+
+Final report must include:
+1. Issues found
+2. Issues fixed
+3. Files changed
+4. Changes made
+5. PC/Desktop verification result
+6. Mobile verification result
+7. Not fixed and why
+8. Manual checking still needed
+9. Warnings/risks
+10. Confirmation that no unrelated edits were made
+11. Confirmation that no new issue was intentionally introduced
