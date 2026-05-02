@@ -1,0 +1,48 @@
+Act as a senior frontend bug-fixing engineer.
+
+For this step, fix ONLY these 3 admin data query error UI issues:
+
+1. Dashboard query error UI:
+If dashboard stats, recent orders, or chart data fails to load, show a clear admin-friendly error message instead of misleading empty or normal-looking data.
+
+2. Products query error UI:
+If product data fails to load, show a clear admin-friendly error message instead of showing only an empty product state.
+
+3. Orders query error UI:
+If order data fails to load, show a clear admin-friendly error message instead of showing only an empty order state.
+
+Important rules:
+- Do not fix any other issue in this step.
+- Do not redesign the UI.
+- Do not change backend/API logic.
+- Do not edit unrelated files.
+- Do not make unnecessary edits.
+- Do not remove existing features.
+- Do not change unrelated business logic.
+- Preserve all working functionality.
+- Fixes must work on both PC/Desktop and Mobile.
+- Verify the related behavior on both PC/Desktop and Mobile views.
+- Do not introduce new bugs, errors, conflicts, broken features, or security issues.
+- If anything is unclear or risky, do not guess; mention it in the report.
+
+Error UI requirements:
+- Use the project’s existing UI/toast/alert/card pattern if available.
+- Keep messages clear and admin-friendly.
+- Do not show technical stack traces to normal admin users.
+- Do not hide existing loading states or success states.
+- Do not change empty states when the API succeeds but returns zero data.
+
+After finishing, run existing checks/tests if available. If no automated test exists, manually verify the current admin UI flow and clearly report what was tested.
+
+Final report must include:
+1. Issues found
+2. Issues fixed
+3. Files changed
+4. Changes made
+5. PC/Desktop verification result
+6. Mobile verification result
+7. Not fixed and why
+8. Manual checking still needed
+9. Warnings/risks
+10. Confirmation that no unrelated edits were made
+11. Confirmation that no new issue was intentionally introduced
