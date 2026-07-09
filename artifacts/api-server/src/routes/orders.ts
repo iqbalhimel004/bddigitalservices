@@ -153,14 +153,15 @@ router.patch("/orders/bulk-status", requireAdmin, async (req, res): Promise<void
     .where(inArray(ordersTable.id, ids));
 
   const validIds = currentOrders
-    .filter((o) => o.status !== null && ALLOWED_TRANSITIONS[o.status as OrderStatus].includes(status))
-    .map((o) => o.id);
+    .filter((o: { id: number; status: string | null }) =>
+      o.status !== null && ALLOWED_TRANSITIONS[o.status as OrderStatus].includes(status))
+    .map((o: { id: number; status: string | null }) => o.id);
 
   const skippedCount = ids.length - validIds.length;
 
   if (validIds.length === 0) {
     const allowedList = [...new Set(
-      currentOrders.map((o) => {
+      currentOrders.map((o: { id: number; status: string | null }) => {
         const allowed = ALLOWED_TRANSITIONS[o.status as OrderStatus];
         return allowed.length ? allowed.join(", ") : "none (final state)";
       })

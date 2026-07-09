@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, productsTable, categoriesTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -86,8 +86,5 @@ ${urls.join("\n")}
 `);
   }
 });
-
-// Suppress unused import warning for sql when not referenced
-void sql;
 
 export default router;
