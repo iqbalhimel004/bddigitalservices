@@ -152,9 +152,13 @@ router.patch("/orders/bulk-status", requireAdmin, async (req, res): Promise<void
     .from(ordersTable)
     .where(inArray(ordersTable.id, ids));
 
+  // Same defense as the single-order endpoint (bug #5): treat null/unknown
+  // stored statuses as repairable to any valid status instead of crashing.
   const validIds = currentOrders
-    .filter((o: { id: number; status: string | null }) =>
-      o.status !== null && ALLOWED_TRANSITIONS[o.status as OrderStatus].includes(status))
+    .filter((o: { id: number; status: string | null }) => {
+      const allowed = (o.status && ALLOWED_TRANSITIONS[o.status as OrderStatus]) || VALID_STATUSES;
+      return allowed.includes(status);
+    })
     .map((o: { id: number; status: string | null }) => o.id);
 
   const skippedCount = ids.length - validIds.length;
@@ -162,7 +166,7 @@ router.patch("/orders/bulk-status", requireAdmin, async (req, res): Promise<void
   if (validIds.length === 0) {
     const allowedList = [...new Set(
       currentOrders.map((o: { id: number; status: string | null }) => {
-        const allowed = ALLOWED_TRANSITIONS[o.status as OrderStatus];
+        const allowed = (o.status && ALLOWED_TRANSITIONS[o.status as OrderStatus]) || VALID_STATUSES;
         return allowed.length ? allowed.join(", ") : "none (final state)";
       })
     )].join("; ");
