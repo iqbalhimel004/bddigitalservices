@@ -44,7 +44,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, AlertCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Product, CreateProductBody } from "@workspace/api-client-react";
 
@@ -65,10 +65,10 @@ export default function AdminProducts() {
   const [badge, setBadge] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  useAdminAuth();
+  const { ready, username } = useAdminAuth();
 
-  const { data: products, isLoading } = useListProducts(
-    {}, 
+  const { data: products, isLoading, isError } = useListProducts(
+    {},
     { query: { queryKey: getListProductsQueryKey() } }
   );
 
@@ -122,7 +122,7 @@ export default function AdminProducts() {
       descriptionEn: descriptionEn || null,
       categoryId: categoryId && categoryId !== "none" ? parseInt(categoryId) : null,
       priceBdt,
-      priceUsd,
+      priceUsd: priceUsd.trim() || "0",
       badge: badge || null,
       isActive,
     };
@@ -137,7 +137,8 @@ export default function AdminProducts() {
             setIsModalOpen(false);
           },
           onError: (err: unknown) => {
-            const msg = err instanceof Error ? err.message : "অজানা সমস্যা হয়েছে।";
+            const apiErr = err as { data?: { error?: string }; message?: string };
+            const msg = apiErr?.data?.error ?? apiErr?.message ?? "অজানা সমস্যা হয়েছে।";
             toast({ title: "আপডেট ব্যর্থ হয়েছে", description: msg, variant: "destructive" });
           },
         }
@@ -152,7 +153,8 @@ export default function AdminProducts() {
             setIsModalOpen(false);
           },
           onError: (err: unknown) => {
-            const msg = err instanceof Error ? err.message : "অজানা সমস্যা হয়েছে।";
+            const apiErr = err as { data?: { error?: string }; message?: string };
+            const msg = apiErr?.data?.error ?? apiErr?.message ?? "অজানা সমস্যা হয়েছে।";
             toast({ title: "তৈরি ব্যর্থ হয়েছে", description: msg, variant: "destructive" });
           },
         }
@@ -169,15 +171,18 @@ export default function AdminProducts() {
           toast({ title: "প্রোডাক্ট মুছে ফেলা হয়েছে" });
         },
         onError: (err: unknown) => {
-          const msg = err instanceof Error ? err.message : "অজানা সমস্যা হয়েছে।";
+          const apiErr = err as { data?: { error?: string }; message?: string };
+          const msg = apiErr?.data?.error ?? apiErr?.message ?? "অজানা সমস্যা হয়েছে।";
           toast({ title: "মুছতে ব্যর্থ হয়েছে", description: msg, variant: "destructive" });
         },
       }
     );
   };
 
+  if (!ready) return null;
+
   return (
-    <AdminLayout>
+    <AdminLayout username={username}>
       <div className="space-y-6">
         <AdminPageHeader
           title="Products"
@@ -203,8 +208,8 @@ export default function AdminProducts() {
                       <Input id="nameEn" value={nameEn} onChange={(e) => setNameEn(e.target.value)} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="nameBn" className="font-bn">Name (Bangla) *</Label>
-                      <Input id="nameBn" value={nameBn} onChange={(e) => setNameBn(e.target.value)} required className="font-bn" />
+                      <Label htmlFor="nameBn" className="font-bn">Name (Bangla)</Label>
+                      <Input id="nameBn" value={nameBn} onChange={(e) => setNameBn(e.target.value)} className="font-bn" />
                     </div>
                   </div>
 
@@ -214,8 +219,8 @@ export default function AdminProducts() {
                       <Input id="priceBdt" value={priceBdt} onChange={(e) => setPriceBdt(e.target.value)} placeholder="e.g. 500" required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="priceUsd">Price (USD) *</Label>
-                      <Input id="priceUsd" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} placeholder="e.g. 5.00" required />
+                      <Label htmlFor="priceUsd">Price (USD)</Label>
+                      <Input id="priceUsd" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} placeholder="e.g. 5.00" />
                     </div>
                   </div>
 
@@ -283,6 +288,15 @@ export default function AdminProducts() {
                   <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-2 text-destructive">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span className="text-sm font-medium">Failed to load products. Please refresh the page.</span>
                     </div>
                   </TableCell>
                 </TableRow>

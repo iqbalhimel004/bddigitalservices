@@ -85,10 +85,8 @@ export default function ProductDetail() {
       </Helmet>
 
       <section className="container mx-auto px-4 py-10 max-w-4xl">
-        <Link href="/">
-          <a className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Back to all products
-          </a>
+        <Link href="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-6">
+          <ArrowLeft className="w-4 h-4 mr-1" /> Back to all products
         </Link>
 
         <article className="bg-card border border-border rounded-2xl p-6 md:p-8">

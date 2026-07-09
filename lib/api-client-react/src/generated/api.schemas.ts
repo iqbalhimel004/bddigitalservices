@@ -149,6 +149,10 @@ export interface SiteSettings {
   whatsapp: string;
   telegram: string;
   facebook: string;
+  messenger?: string;
+  twitter?: string;
+  instagram?: string;
+  tiktok?: string;
   bkashNumber: string;
   nagadNumber: string;
   rocketNumber: string;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { AdminLayout } from "@/components/layout/admin-layout";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -24,17 +24,21 @@ export default function AdminNotices() {
   const [messageEn, setMessageEn] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  useAdminAuth();
+  const { ready, username } = useAdminAuth();
 
   const { data: activeNotice, isLoading } = useGetActiveNotice({
     query: { queryKey: getGetActiveNoticeQueryKey() }
   });
 
+  // Guard: only pre-populate from fetched data once (on initial load).
+  // Subsequent background refetches must NOT overwrite text the admin is typing.
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (activeNotice) {
+    if (activeNotice && !initializedRef.current) {
       setMessageBn(activeNotice.messageBn);
       setMessageEn(activeNotice.messageEn);
       setIsActive(activeNotice.isActive);
+      initializedRef.current = true;
     }
   }, [activeNotice]);
 
@@ -49,13 +53,20 @@ export default function AdminNotices() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetActiveNoticeQueryKey() });
           toast({ title: "Notice updated successfully" });
-        }
+        },
+        onError: (err: unknown) => {
+          const apiErr = err as { data?: { error?: string }; message?: string };
+          const msg = apiErr?.data?.error ?? apiErr?.message ?? "Notice publish failed";
+          toast({ title: msg, variant: "destructive" });
+        },
       }
     );
   };
 
+  if (!ready) return null;
+
   return (
-    <AdminLayout>
+    <AdminLayout username={username}>
       <div className="space-y-6 max-w-2xl">
         <AdminPageHeader
           title="Announcement Notice"

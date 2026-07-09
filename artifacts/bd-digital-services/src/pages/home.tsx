@@ -97,15 +97,36 @@ export default function Home() {
   const { data: categories } = useListCategories({ query: { queryKey: getListCategoriesQueryKey() } });
   const { data: faqsFromDb } = useListFaqs({ query: { queryKey: getListFaqsQueryKey() } });
 
-  const { data: products } = useListProducts(
-    { activeOnly: true, categoryId: activeCategory !== "all" ? parseInt(activeCategory) : undefined },
-    { query: { queryKey: getListProductsQueryKey({ activeOnly: true, categoryId: activeCategory !== "all" ? parseInt(activeCategory) : undefined }) } }
-  );
+  const isAllCategory = activeCategory === "all";
+  const categoryIdParam = isAllCategory ? undefined : parseInt(activeCategory);
 
   const { data: allActiveProducts } = useListProducts(
     { activeOnly: true },
     { query: { queryKey: getListProductsQueryKey({ activeOnly: true }) } }
   );
+
+  const { data: filteredProducts } = useListProducts(
+    { activeOnly: true, categoryId: categoryIdParam },
+    {
+      query: {
+        queryKey: getListProductsQueryKey({ activeOnly: true, categoryId: categoryIdParam }),
+        enabled: !isAllCategory,
+      }
+    }
+  );
+
+  const products = isAllCategory ? allActiveProducts : filteredProducts;
+
+  const selectedProduct = useMemo(
+    () => allActiveProducts?.find(p => p.id.toString() === selectedProductId) ?? null,
+    [allActiveProducts, selectedProductId]
+  );
+
+  const categoryIconMap = useMemo(() => {
+    const map: Record<number, string> = {};
+    categories?.forEach(c => { map[c.id] = c.icon; });
+    return map;
+  }, [categories]);
 
   const displayedProducts = useMemo(() => {
     const base = products ?? [];
@@ -342,7 +363,7 @@ export default function Home() {
         )}
       </Helmet>
       {/* Notice Banner — always visible */}
-      <div className="relative overflow-hidden bg-card border-b border-border py-2">
+      <div className="relative overflow-hidden bg-card border-b border-border py-2 marquee-fade">
         <div className="flex whitespace-nowrap animate-marquee">
           {[0, 1].map(i => (
             <div key={i} className="flex items-center gap-10 pr-16 shrink-0">
@@ -370,7 +391,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 md:pt-24 md:pb-32 overflow-hidden bg-background">
+      <section className="relative pt-10 pb-14 md:pt-16 md:pb-20 overflow-hidden bg-background">
         {/* Ambient glow — subtle, no blobs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-[-80px] left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-primary/[0.07] blur-[130px]" />
@@ -380,7 +401,7 @@ export default function Home() {
         <div className="absolute inset-0 opacity-[0.022] pointer-events-none dot-grid" />
 
         <div className="container mx-auto px-4 text-center relative z-10">
-          <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-4xl mx-auto space-y-5 md:space-y-7">
+          <motion.div initial="hidden" animate="visible" variants={stagger} className="max-w-4xl mx-auto space-y-4 md:space-y-6">
 
             {/* Eyebrow badge */}
             <motion.div variants={fadeIn} className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-sm font-medium text-primary">
@@ -395,30 +416,33 @@ export default function Home() {
             </motion.h1>
 
             {/* Subtitle */}
-            <motion.p variants={fadeIn} className="text-lg md:text-xl text-muted-foreground font-bn leading-relaxed max-w-2xl mx-auto">
-              {settings?.heroSubtitle || "বাংলাদেশের সবচেয়ে বিশ্বস্ত ডিজিটাল প্রোডাক্ট, একাউন্ট এবং কার্ড এর মার্কেটপ্লেস। দ্রুত ডেলিভারি এবং ২৪/৭ সাপোর্ট।"}
-            </motion.p>
+            <motion.div variants={fadeIn} className="max-w-2xl mx-auto space-y-1.5">
+              <p className="text-base md:text-lg text-muted-foreground leading-relaxed text-center">
+                Trusted digital accounts &amp; cards — fast delivery, 24/7 WhatsApp support.
+              </p>
+              <p className="text-base md:text-lg text-muted-foreground font-bn leading-relaxed text-center">
+                {settings?.heroSubtitle || "বাংলাদেশের সবচেয়ে বিশ্বস্ত ডিজিটাল প্রোডাক্ট, একাউন্ট এবং কার্ড এর মার্কেটপ্লেস। দ্রুত ডেলিভারি এবং ২৪/৭ সাপোর্ট।"}
+              </p>
+            </motion.div>
 
             {/* CTA Buttons */}
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
               <Button
-                size="lg"
-                className="text-base px-8 py-5 rounded-xl bg-primary hover:bg-[#6D4DF4] text-white shadow-lg shadow-primary/20 hover:shadow-primary/35 hover:-translate-y-0.5 transition-all font-semibold"
+                className="text-sm px-6 py-2.5 rounded-xl bg-primary hover:bg-[#6D4DF4] text-white shadow-lg shadow-primary/20 hover:shadow-primary/35 hover:-translate-y-0.5 transition-all font-semibold"
                 onClick={() => document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })}
               >
-                <ShoppingCart className="mr-2 h-5 w-5" /> {settings?.heroPrimaryBtn || "Browse Products"}
+                <ShoppingCart className="mr-1.5 h-4 w-4" /> {settings?.heroPrimaryBtn || "Browse Products"}
               </Button>
               <Button
-                size="lg"
-                className="text-base px-8 py-5 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-white shadow-lg shadow-green-900/20 hover:-translate-y-0.5 transition-all font-semibold border-0"
+                className="text-sm px-6 py-2.5 rounded-xl bg-[#22C55E] hover:bg-[#16A34A] text-white shadow-lg shadow-green-900/20 hover:-translate-y-0.5 transition-all font-semibold border-0"
                 onClick={() => handleWhatsAppOrder()}
               >
-                <MessageCircle className="mr-2 h-5 w-5" /> {settings?.heroWhatsappBtn || "Order via WhatsApp"}
+                <MessageCircle className="mr-1.5 h-4 w-4" /> {settings?.heroWhatsappBtn || "Order via WhatsApp"}
               </Button>
             </motion.div>
 
             {/* Trust stats */}
-            <motion.div variants={fadeIn} className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-5 mt-2">
+            <motion.div variants={fadeIn} className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3">
               {[
                 { icon: Users,          value: settings?.heroStat1Value || "1000+",   label: settings?.heroStat1Label || "সন্তুষ্ট গ্রাহক" },
                 { icon: Package,        value: settings?.heroStat2Value || "15+",     label: settings?.heroStat2Label || "প্রোডাক্ট" },
@@ -448,11 +472,12 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-foreground">Best Sellers</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto font-bn">আমাদের সর্বাধিক বিক্রিত ডিজিটাল সার্ভিস ও একাউন্ট</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
               {featuredProducts.map(product => (
                 <ProductCard
                   key={product.id}
                   product={product}
+                  categoryIcon={product.categoryId != null ? (categoryIconMap[product.categoryId] ?? "📦") : "📦"}
                   onOrder={() => handleWhatsAppOrder(product)}
                   onFormOrder={id => {
                     setSelectedProductId(id.toString());
@@ -527,11 +552,12 @@ export default function Home() {
             </div>
 
             <div className="min-h-[400px]">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {displayedProducts.map(product => (
                   <ProductCard
                     key={product.id}
                     product={product}
+                    categoryIcon={product.categoryId != null ? (categoryIconMap[product.categoryId] ?? "📦") : "📦"}
                     onOrder={() => handleWhatsAppOrder(product)}
                     onFormOrder={id => {
                       setSelectedProductId(id.toString());
@@ -588,6 +614,9 @@ export default function Home() {
               </div>
               <h3 className="text-lg font-bold mb-2 text-foreground">{settings?.howToOrderStep2Title || "Send Payment"}</h3>
               <p className="text-muted-foreground font-bn text-sm leading-relaxed">{settings?.howToOrderStep2Desc || "বিকাশ, নগদ বা রকেটে পেমেন্ট করে নিচের ফর্মটি ফিলাপ করুন।"}</p>
+              <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary/80 bg-primary/10 border border-primary/15 rounded-lg px-2.5 py-1">
+                <Copy className="w-3 h-3 flex-shrink-0" /> Save your Transaction ID after payment
+              </p>
             </div>
 
             <div className="glass-card p-6 md:p-8 rounded-2xl text-center hover:-translate-y-1 transition-transform duration-300 relative group overflow-hidden">
@@ -598,6 +627,75 @@ export default function Home() {
               <h3 className="text-lg font-bold mb-2 text-foreground">{settings?.howToOrderStep3Title || "Receive Account"}</h3>
               <p className="text-muted-foreground font-bn text-sm leading-relaxed">{settings?.howToOrderStep3Desc || "৫-৩০ মিনিটের মধ্যে হোয়াটসঅ্যাপে একাউন্ট বুঝে নিন।"}</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-14 md:py-20 bg-background relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute right-[-60px] top-1/2 -translate-y-1/2 w-[380px] h-[380px] rounded-full bg-primary/[0.045] blur-[80px]" />
+          <div className="absolute left-[-60px] bottom-0 w-[280px] h-[280px] rounded-full bg-primary/[0.03] blur-[60px]" />
+        </div>
+        <div className="container mx-auto px-4 relative z-10">
+          <div className="text-center mb-10 md:mb-12">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
+              <Star className="w-3 h-3" /> Customer Reviews
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-foreground">What Our Customers Say</h2>
+            <p className="text-muted-foreground font-bn max-w-xl mx-auto">আমাদের হাজারো সন্তুষ্ট গ্রাহক বারবার ফিরে আসেন</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4 md:gap-6 max-w-5xl mx-auto">
+            {([
+              {
+                name: "Rahim Uddin",
+                product: "ChatGPT Plus",
+                avatar: "RU",
+                avatarCls: "bg-primary/10 text-primary",
+                review: "Got my ChatGPT Plus subscription in under 15 minutes. 100% genuine account and the best price in Bangladesh.",
+                reviewBn: "মাত্র ১৫ মিনিটে পেয়েছি। দাম সবচেয়ে কম, একদম আসল একাউন্ট।",
+              },
+              {
+                name: "Nasrin Akter",
+                product: "Netflix Premium",
+                avatar: "NA",
+                avatarCls: "bg-[#22C55E]/10 text-[#22C55E]",
+                review: "Using BD Digital Services for 6 months now. Fast delivery every time, never had a single issue.",
+                reviewBn: "৬ মাস ধরে ব্যবহার করছি। প্রতিবার দ্রুত ডেলিভারি পেয়েছি, কোনো সমস্যা হয়নি।",
+              },
+              {
+                name: "Tanvir Ahmed",
+                product: "Virtual Card",
+                avatar: "TA",
+                avatarCls: "bg-amber-500/10 text-amber-600",
+                review: "Needed a virtual card urgently — received it in 10 minutes. WhatsApp support is incredibly responsive.",
+                reviewBn: "জরুরিভাবে ভার্চুয়াল কার্ড দরকার ছিল, ১০ মিনিটে পেয়েছি। সাপোর্ট অসাধারণ দ্রুত।",
+              },
+            ] as const).map(({ name, product, avatar, avatarCls, review, reviewBn }) => (
+              <div key={name} className="glass-card p-5 md:p-6 rounded-2xl flex flex-col gap-3 relative overflow-hidden hover:-translate-y-1 transition-transform duration-300 group">
+                {/* Decorative quote mark */}
+                <div className="absolute top-2 right-3 text-7xl font-black text-foreground/[0.03] select-none group-hover:text-primary/[0.06] transition-colors leading-none" aria-hidden="true">"</div>
+                {/* 5-star rating */}
+                <div className="flex gap-0.5" aria-label="5 out of 5 stars">
+                  {([1, 2, 3, 4, 5] as const).map(i => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                {/* Review body */}
+                <p className="text-sm text-foreground leading-relaxed">{review}</p>
+                <p className="text-xs text-muted-foreground font-bn leading-relaxed">{reviewBn}</p>
+                {/* Reviewer identity */}
+                <div className="flex items-center gap-3 pt-1 mt-auto border-t border-border/40">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${avatarCls}`}>
+                    {avatar}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground leading-none mb-1">{name}</p>
+                    <p className="text-xs text-muted-foreground">{product}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -758,6 +856,18 @@ export default function Home() {
                       </div>
                     </div>
 
+                    {selectedProduct && (
+                      <div className="flex items-center justify-between gap-3 bg-primary/[0.07] border border-primary/20 rounded-xl px-4 py-3">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CreditCard className="w-4 h-4 text-primary flex-shrink-0" />
+                          <span className="text-sm font-medium text-foreground truncate">{selectedProduct.nameEn}</span>
+                        </div>
+                        <span className="text-base font-bold text-primary flex-shrink-0">
+                          {parseFloat(selectedProduct.priceBdt || "0") > 0 ? `৳${selectedProduct.priceBdt}` : "Contact for price"}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="space-y-1.5">
                       <Label htmlFor="message" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transaction ID &amp; Notes</Label>
                       <Textarea
@@ -770,7 +880,7 @@ export default function Home() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full text-base py-6 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all" disabled={createOrderMutation.isPending}>
+                    <Button type="submit" className="w-full text-base py-3 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all" disabled={createOrderMutation.isPending}>
                       {createOrderMutation.isPending ? "Submitting Order..." : "Submit Order"}
                     </Button>
                   </form>
@@ -820,8 +930,9 @@ export default function Home() {
   );
 }
 
-function ProductCard({ product, onOrder, onFormOrder }: {
+function ProductCard({ product, categoryIcon, onOrder, onFormOrder }: {
   product: Product;
+  categoryIcon: string;
   onOrder: () => void;
   onFormOrder: (id: number) => void;
 }) {
@@ -837,15 +948,23 @@ function ProductCard({ product, onOrder, onFormOrder }: {
       <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
       {/* Card Header */}
-      <div className="p-4 pb-3 md:p-5 md:pb-4 relative">
+      <div className="p-3 pb-2.5 md:p-5 md:pb-4 relative">
         {product.badge && (
-          <span className="absolute top-4 right-4 inline-flex items-center px-2 py-0.5 rounded-md bg-primary/15 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20">
+          <span className="absolute top-3 right-3 md:top-4 md:right-4 inline-flex items-center px-2 py-0.5 rounded-md bg-primary/15 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20">
             {product.badge}
           </span>
         )}
 
+        {/* Category icon */}
+        <div
+          className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/[0.10] flex items-center justify-center text-2xl mb-2 select-none group-hover:bg-primary/15 transition-colors"
+          aria-hidden="true"
+        >
+          {categoryIcon}
+        </div>
+
         {product.categoryNameEn && (
-          <p className="text-[10px] font-semibold text-primary/60 uppercase tracking-widest mb-2.5">
+          <p className="text-[10px] font-semibold text-primary/60 uppercase tracking-widest mb-1.5">
             {product.categoryNameEn}
           </p>
         )}
@@ -859,7 +978,7 @@ function ProductCard({ product, onOrder, onFormOrder }: {
           <p className="text-sm text-muted-foreground font-bn mt-0.5 leading-relaxed">{product.nameBn}</p>
         )}
 
-        <div className="mt-3 flex items-baseline gap-2">
+        <div className="mt-2 flex items-baseline gap-2">
           <span className={`font-bold tracking-tight ${priceIsFree ? "text-sm text-muted-foreground" : "text-2xl text-foreground"}`}>
             {priceDisplay}
           </span>
@@ -872,7 +991,7 @@ function ProductCard({ product, onOrder, onFormOrder }: {
       <div className="mx-4 md:mx-5 h-px bg-border/50" />
 
       {/* Description */}
-      <div className="flex-1 px-4 py-2.5 md:px-5 md:py-3">
+      <div className="flex-1 px-4 py-2 md:px-5 md:py-3">
         <div className="space-y-1.5">
           {product.descriptionEn && (
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{product.descriptionEn}</p>
@@ -884,7 +1003,7 @@ function ProductCard({ product, onOrder, onFormOrder }: {
       </div>
 
       {/* Action buttons */}
-      <div className="px-4 pb-3 md:px-5 md:pb-4 pt-1 flex flex-col gap-2">
+      <div className="px-4 pb-2.5 md:px-5 md:pb-4 pt-0.5 flex flex-col gap-1.5 md:gap-2">
         <Button
           className="w-full bg-primary hover:bg-[#6D4DF4] text-white text-sm font-semibold shadow-sm shadow-primary/15 hover:shadow-primary/25 transition-all"
           onClick={() => onFormOrder(product.id)}

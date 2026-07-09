@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/admin-layout";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -16,8 +17,8 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import { formatDistanceToNow, parseISO } from "date-fns";
-import { Eye, Users, Calendar, TrendingUp } from "lucide-react";
+import { formatDistanceToNow, parseISO, isValid } from "date-fns";
+import { Eye, Users, Calendar, TrendingUp, AlertCircle } from "lucide-react";
 
 interface Summary {
   today: { visits: number; sessions: number };
@@ -39,8 +40,10 @@ const DEVICE_COLORS: Record<string, string> = {
   tablet: "#f59e0b",
 };
 
+const _apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(path, { credentials: "include" });
+  const res = await fetch(`${_apiBase}${path}`, { credentials: "include" });
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json() as Promise<T>;
 }
@@ -53,6 +56,7 @@ const SUMMARY_META = [
 ];
 
 export default function AdminAnalytics() {
+  const { ready, username } = useAdminAuth();
   const [period, setPeriod] = useState<"7d" | "30d">("7d");
 
   const { data: realtime } = useQuery({
@@ -61,9 +65,10 @@ export default function AdminAnalytics() {
     refetchInterval: 30_000,
   });
 
-  const { data: summary } = useQuery({
+  const { data: summary, isError: isSummaryError } = useQuery({
     queryKey: ["analytics-summary"],
     queryFn: () => apiFetch<Summary>("/api/analytics/summary"),
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
 
@@ -75,40 +80,57 @@ export default function AdminAnalytics() {
   const { data: pages } = useQuery({
     queryKey: ["analytics-pages"],
     queryFn: () => apiFetch<PageRow[]>("/api/analytics/pages?limit=10"),
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
 
   const { data: devices } = useQuery({
     queryKey: ["analytics-devices"],
     queryFn: () => apiFetch<DeviceRow[]>("/api/analytics/devices"),
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
 
   const { data: referrers } = useQuery({
     queryKey: ["analytics-referrers"],
     queryFn: () => apiFetch<ReferrerRow[]>("/api/analytics/referrers?limit=10"),
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
 
   const { data: countries } = useQuery({
     queryKey: ["analytics-countries"],
     queryFn: () => apiFetch<CountryRow[]>("/api/analytics/countries?limit=10"),
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
 
   const { data: recent } = useQuery({
     queryKey: ["analytics-recent"],
     queryFn: () => apiFetch<RecentRow[]>("/api/analytics/recent?limit=50"),
+    staleTime: 60_000,
     refetchInterval: 60_000,
   });
 
+  if (!ready) return null;
+
   return (
-    <AdminLayout>
+    <AdminLayout username={username}>
       <div className="space-y-8">
         <AdminPageHeader
           title="Analytics"
           description="Track visitor traffic, device breakdown, and page performance."
         />
+
+        {isSummaryError && (
+          <div className="flex items-center gap-3 px-4 py-4 rounded-xl border border-destructive/30 bg-destructive/5">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">Analytics data could not be loaded</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Some or all analytics data may be unavailable. Please refresh the page or check your connection.</p>
+            </div>
+          </div>
+        )}
 
         {/* Active Now */}
         <div className="flex items-center gap-4 px-5 py-4 rounded-xl border border-green-500/30 bg-green-500/5">
@@ -366,7 +388,7 @@ export default function AdminAnalytics() {
                     <tr key={row.id} className="border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 font-mono text-xs truncate max-w-[200px]">{row.pagePath}</td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap text-xs">
-                        {formatDistanceToNow(new Date(row.createdAt), { addSuffix: true })}
+                        {(() => { const d = new Date(row.createdAt); return isValid(d) ? formatDistanceToNow(d, { addSuffix: true }) : "—"; })()}
                       </td>
                       <td className="px-4 py-3 capitalize text-xs">{row.deviceType}</td>
                       <td className="px-4 py-3 text-xs">{row.browser}</td>

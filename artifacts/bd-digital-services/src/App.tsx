@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, Component, type ReactNode } from "react";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HelmetProvider } from "react-helmet-async";
@@ -26,9 +26,68 @@ const queryClient = new QueryClient({
     queries: {
       retry: false,
       refetchOnWindowFocus: false,
+      staleTime: 30_000,
     },
   },
 });
+
+/**
+ * Catches "Failed to fetch dynamically imported module" errors that occur
+ * when Vite's HMR invalidates the module graph while a lazy import is
+ * in-flight (dev), or when a user has a stale bundle after a redeployment
+ * (prod). On first occurrence, reloads once to get fresh module URLs.
+ * sessionStorage flag prevents infinite reload loops: if the same error
+ * recurs after the reload, a manual-reload fallback UI is shown instead.
+ */
+class ChunkErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    const msg = error?.message ?? "";
+    const isChunkError =
+      msg.includes("Failed to fetch dynamically imported module") ||
+      msg.includes("Importing a module script failed") ||
+      msg.includes("Unable to preload CSS for");
+    if (isChunkError && !sessionStorage.getItem("_chunk_reload")) {
+      sessionStorage.setItem("_chunk_reload", "1");
+      window.location.reload();
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Page failed to load.
+            </p>
+            <button
+              className="text-sm text-primary hover:underline"
+              onClick={() => {
+                sessionStorage.removeItem("_chunk_reload");
+                window.location.reload();
+              }}
+            >
+              Reload page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function PageSpinner() {
   return (
@@ -68,7 +127,9 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
+              <ChunkErrorBoundary>
+                <Router />
+              </ChunkErrorBoundary>
             </WouterRouter>
             <Toaster />
           </TooltipProvider>

@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { seedDefaultData } from "./lib/seed";
+import { initDefaultSettings } from "./routes/settings";
 
 const rawPort = process.env["PORT"];
 
@@ -24,6 +25,7 @@ const server = app.listen(port, async (err?: Error) => {
 
   logger.info({ port }, "Server listening");
 
+  initDefaultSettings();
   await seedDefaultData();
 });
 

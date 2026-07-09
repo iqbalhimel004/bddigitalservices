@@ -102,10 +102,37 @@ router.patch("/orders/bulk-status", requireAdmin, async (req, res): Promise<void
     return;
   }
 
+  // Enforce per-order transition rules, same as the single-order endpoint.
+  const currentOrders = await db
+    .select({ id: ordersTable.id, status: ordersTable.status })
+    .from(ordersTable)
+    .where(inArray(ordersTable.id, ids));
+
+  const validIds = currentOrders
+    .filter((o) => o.status !== null && ALLOWED_TRANSITIONS[o.status as OrderStatus].includes(status))
+    .map((o) => o.id);
+
+  const skippedCount = ids.length - validIds.length;
+
+  if (validIds.length === 0) {
+    const allowedList = [...new Set(
+      currentOrders.map((o) => {
+        const allowed = ALLOWED_TRANSITIONS[o.status as OrderStatus];
+        return allowed.length ? allowed.join(", ") : "none (final state)";
+      })
+    )].join("; ");
+    res.status(422).json({
+      error: `No orders can transition to '${status}'. Allowed transitions: ${allowedList}`,
+      skippedCount: ids.length,
+      updatedCount: 0,
+    });
+    return;
+  }
+
   await db
     .update(ordersTable)
     .set({ status })
-    .where(inArray(ordersTable.id, ids));
+    .where(inArray(ordersTable.id, validIds));
 
   const rows = await db
     .select({
@@ -122,7 +149,7 @@ router.patch("/orders/bulk-status", requireAdmin, async (req, res): Promise<void
     })
     .from(ordersTable)
     .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
-    .where(inArray(ordersTable.id, ids));
+    .where(inArray(ordersTable.id, validIds));
 
   res.json(rows);
 });

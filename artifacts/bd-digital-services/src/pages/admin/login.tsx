@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Lock, User, KeyRound, Mail, Server, Zap, Eye, EyeOff } from "lucide-react";
 
 export default function AdminLogin() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +28,8 @@ export default function AdminLogin() {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/admin/me", { credentials: "include" })
+    const _apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
+    void fetch(`${_apiBase}/api/admin/me`, { credentials: "include" })
       .then((res) => {
         if (!cancelled && res.ok) setLocation("/admin/dashboard");
       })
@@ -36,7 +37,19 @@ export default function AdminLogin() {
     return () => {
       cancelled = true;
     };
-  }, [location, setLocation]);
+  }, [setLocation]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("expired") === "1") {
+      toast({
+        title: "Session মেয়াদ শেষ হয়ে গেছে",
+        description: "নিরাপত্তার জন্য স্বয়ংক্রিয়ভাবে লগআউট হয়েছে। আবার লগইন করুন।",
+        variant: "destructive",
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [toast]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,7 +196,7 @@ function ForgotPasswordDialog() {
           <div className="rounded-lg bg-violet-500/5 border border-violet-500/20 p-4 space-y-3">
             {[
               { num: "১", title: "Hosting Control Panel খুলুন", desc: "Hostinger বা আপনার hosting provider এ লগইন করুন।" },
-              { num: "২", title: "Environment Variables খুঁজুন", desc: (<>Node.js app settings এ গিয়ে <code className="bg-muted px-1 rounded text-xs">ADMIN_PASSWORD</code> ভেরিয়েবল পরিবর্তন করুন।</>) },
+              { num: "২", title: "Password পরিবর্তন করুন", desc: "Hosting panel এ Node.js app settings এ গিয়ে admin password-এর ভেরিয়েবল আপডেট করুন।" },
               { num: "৩", title: "App রিস্টার্ট করুন", desc: "নতুন password দিয়ে app পুনরায় চালু করুন।" },
             ].map((step) => (
               <div key={step.num} className="flex items-start gap-3">
@@ -212,8 +225,8 @@ function ForgotPasswordDialog() {
           <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 p-3 flex items-start gap-3">
             <Server className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">বর্তমান username:</span>{" "}
-              <code className="bg-muted px-1 rounded">ADMIN_USERNAME</code> এনভায়রনমেন্ট ভেরিয়েবল দিয়ে নিয়ন্ত্রিত।
+              <span className="font-medium text-foreground">মনে রাখুন:</span>{" "}
+              Admin username ও password server-side configuration এ সংরক্ষিত। Hosting panel থেকে পরিবর্তন করতে হবে।
             </p>
           </div>
         </div>

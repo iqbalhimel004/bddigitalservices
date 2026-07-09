@@ -7,6 +7,7 @@ import { loginLimiter } from "../middlewares/rateLimits";
 import {
   createSession,
   destroySession,
+  destroyAllSessions,
   getSession,
   SESSION_TTL_SECONDS,
 } from "../lib/sessions";
@@ -138,9 +139,9 @@ router.post("/admin/login", loginLimiter, async (req, res): Promise<void> => {
   res.json({ message: "লগইন সফল হয়েছে" });
 });
 
-router.post("/admin/logout", async (req, res): Promise<void> => {
-  const cookieId = (req as { cookies?: Record<string, string> }).cookies?.[SESSION_COOKIE];
-  await destroySession(cookieId);
+router.post("/admin/logout", requireAdmin, async (req, res): Promise<void> => {
+  const authedReq = req as AuthedRequest;
+  await destroySession(authedReq.adminSessionId);
   clearAuthCookies(res);
   res.json({ message: "Logged out" });
 });
@@ -159,7 +160,7 @@ router.get("/admin/me", async (req, res): Promise<void> => {
   } catch {
     // Non-fatal — return authenticated without username
   }
-  res.json({ authenticated: true, csrfToken: session.csrfToken, username });
+  res.json({ authenticated: true, csrfToken: session.csrfToken, username, expiresAt: session.expiresAt });
 });
 
 router.put("/admin/credentials", requireAdmin, async (req, res): Promise<void> => {
@@ -215,7 +216,13 @@ router.put("/admin/credentials", requireAdmin, async (req, res): Promise<void> =
     await setDbSetting(CRED_USERNAME_KEY, trimmed);
   }
 
-  req.log.info("Admin credentials updated");
+  // Invalidate all existing sessions so any hijacked or stale sessions
+  // are immediately revoked, then issue a fresh session for the current admin.
+  await destroyAllSessions();
+  const newSession = await createSession();
+  setAuthCookies(res, newSession.id, newSession.csrfToken);
+
+  req.log.info("Admin credentials updated; all sessions invalidated");
   res.json({ message: "Login details সফলভাবে পরিবর্তন হয়েছে" });
 });
 

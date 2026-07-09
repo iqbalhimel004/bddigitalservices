@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { useGetSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
-import { MessageCircle, Send, Menu, X, Facebook, Sun, Moon } from "lucide-react";
+import { MessageCircle, Send, Menu, X, Facebook, Sun, Moon, Instagram, Music2 } from "lucide-react";
 import { useTheme } from "@/components/theme-provider";
 
 interface MainLayoutProps {
@@ -16,10 +16,15 @@ export function MainLayout({ children }: MainLayoutProps) {
   const whatsappLink = settings?.whatsapp || "https://wa.me/8801572792499";
   const telegramLink = settings?.telegram || "https://t.me/+8801572792499";
   const facebookLink = settings?.facebook || "";
+  const messengerLink = settings?.messenger || "";
+  const twitterLink = settings?.twitter || "";
+  const instagramLink = settings?.instagram || "";
+  const tiktokLink = settings?.tiktok || "";
 
   const navLinks = [
     { href: "#products", label: "Products" },
     { href: "#how-to-order", label: "How to Order" },
+    { href: "#order-form", label: "Order" },
     { href: "#faq", label: "FAQ" },
   ];
 
@@ -59,7 +64,7 @@ export function MainLayout({ children }: MainLayoutProps) {
               href={whatsappLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-[#22C55E] text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-[#16A34A] transition-all hover:-translate-y-px shadow-md shadow-green-900/20"
+              className="hidden sm:flex items-center gap-2 bg-[#22C55E] text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-[#16A34A] transition-all hover:-translate-y-px shadow-md shadow-green-900/20"
             >
               <MessageCircle className="w-4 h-4" />
               <span className="hidden sm:inline">WhatsApp</span>
@@ -97,23 +102,38 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                   {theme === "dark" ? "Light Mode" : "Dark Mode"}
                 </button>
-                <div className="flex gap-2">
-                  <a
-                    href={whatsappLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#22C55E] text-white px-4 py-2.5 rounded-xl font-medium text-sm"
-                  >
-                    <MessageCircle className="w-4 h-4" /> WhatsApp
-                  </a>
-                  <a
-                    href={telegramLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#0088cc] text-white px-4 py-2.5 rounded-xl font-medium text-sm"
-                  >
-                    <Send className="w-4 h-4" /> Telegram
-                  </a>
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex gap-1.5">
+                    <a
+                      href={whatsappLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#22C55E] text-white px-2.5 py-2 rounded-xl font-medium text-xs"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 shrink-0" /> WhatsApp
+                    </a>
+                    <a
+                      href={telegramLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#0088cc] text-white px-2.5 py-2 rounded-xl font-medium text-xs"
+                    >
+                      <Send className="w-3.5 h-3.5 shrink-0" /> Telegram
+                    </a>
+                  </div>
+                  {messengerLink && (
+                    <a
+                      href={messengerLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-1.5 bg-[#0084FF] text-white px-2.5 py-2 rounded-xl font-medium text-xs"
+                    >
+                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2C6.36 2 2 6.13 2 11.7c0 2.9 1.17 5.52 3.07 7.38.15.14.24.34.24.56l.05 1.76a.8.8 0 001.12.7l1.96-.87a.8.8 0 01.54-.04 10.28 10.28 0 002.97.43c5.64 0 10-4.13 10-9.7S17.64 2 12 2zm5.98 7.55l-2.93 4.64a1.5 1.5 0 01-2.16.4l-2.33-1.75a.6.6 0 00-.72 0l-3.15 2.39c-.42.32-.97-.17-.7-.63l2.93-4.64a1.5 1.5 0 012.16-.4l2.33 1.75a.6.6 0 00.72 0l3.15-2.39c.42-.32.97.17.7.63z" />
+                      </svg>
+                      Messenger
+                    </a>
+                  )}
                 </div>
               </div>
           </nav>
@@ -126,22 +146,31 @@ export function MainLayout({ children }: MainLayoutProps) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-card text-muted-foreground border-t border-border">
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        <div className="container mx-auto px-4 py-5">
+      <footer className="relative overflow-hidden bg-gradient-to-b from-[#0d1525] to-[#070c18] border-t border-white/[0.07] text-slate-300">
+        {/* Ambient glow blobs — decorative only */}
+        <div className="absolute -left-16 -top-8 w-80 h-48 bg-primary/[0.12] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -right-12 bottom-0 w-64 h-36 bg-secondary/[0.09] rounded-full blur-3xl pointer-events-none" />
 
-          {/* Row 1: Brand + Social icons */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-3">
-            <div className="text-xl font-bold tracking-tight gradient-text">
-              {settings?.siteName || "BD Digital Services"}
+        {/* Top accent line */}
+        <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+
+        <div className="relative container mx-auto px-4 py-8 md:py-10">
+
+          {/* Row 1: Brand + Social buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-5">
+            <div className="flex flex-col items-center sm:items-start gap-0.5">
+              <div className="text-xl font-bold tracking-tight gradient-text">
+                {settings?.siteName || "BD Digital Services"}
+              </div>
+              <p className="text-[11px] text-slate-500 tracking-wide hidden sm:block">Bangladesh&apos;s Trusted Digital Marketplace</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2">
               <a
                 href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="WhatsApp"
-                className="flex items-center gap-1.5 bg-[#22C55E] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#16A34A] transition-colors"
+                className="flex items-center gap-1.5 bg-[#22C55E] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#16A34A] hover:scale-105 transition-all"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 WhatsApp
@@ -151,7 +180,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Telegram"
-                className="flex items-center gap-1.5 bg-[#0088cc] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#006fab] transition-colors"
+                className="flex items-center gap-1.5 bg-[#0088cc] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#006fab] hover:scale-105 transition-all"
               >
                 <Send className="w-3.5 h-3.5" />
                 Telegram
@@ -162,40 +191,76 @@ export function MainLayout({ children }: MainLayoutProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Facebook"
-                  className="flex items-center gap-1.5 bg-[#1877F2] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#1565d8] transition-colors"
+                  className="flex items-center gap-1.5 bg-[#1877F2] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#1565d8] hover:scale-105 transition-all"
                 >
                   <Facebook className="w-3.5 h-3.5" />
                   Facebook
                 </a>
               )}
+              {twitterLink && (
+                <a
+                  href={twitterLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="X"
+                  className="flex items-center gap-1.5 bg-[#1D9BF0] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#1a8cd8] hover:scale-105 transition-all"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  X
+                </a>
+              )}
+              {instagramLink && (
+                <a
+                  href={instagramLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="flex items-center gap-1.5 bg-[#E1306C] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#c92761] hover:scale-105 transition-all"
+                >
+                  <Instagram className="w-3.5 h-3.5" />
+                  Instagram
+                </a>
+              )}
+              {tiktokLink && (
+                <a
+                  href={tiktokLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="TikTok"
+                  className="flex items-center gap-1.5 bg-[#FF0050] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#d4004a] hover:scale-105 transition-all"
+                >
+                  <Music2 className="w-3.5 h-3.5" />
+                  TikTok
+                </a>
+              )}
             </div>
           </div>
 
+          {/* Gradient divider */}
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.10] to-transparent mb-5" />
+
           {/* Row 2: Nav links */}
-          <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 mb-4">
+          <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6">
             {[
               { href: "#products", label: "Products" },
               { href: "#how-to-order", label: "How to Order" },
               { href: "#faq", label: "FAQ" },
-              { href: whatsappLink, label: "WhatsApp", external: true },
-              { href: telegramLink, label: "Telegram", external: true },
             ].map(link => (
               <a
                 key={link.label}
                 href={link.href}
-                {...("external" in link && link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors"
+                className="text-xs font-medium text-slate-400 hover:text-white transition-colors tracking-wide"
               >
                 {link.label}
               </a>
             ))}
           </nav>
 
-          {/* Divider */}
-          <div className="w-full h-px bg-border/40 mb-3" />
+          {/* Bottom divider */}
+          <div className="w-full h-px bg-white/[0.07] mb-4" />
 
           {/* Row 3: Copyright + Trust note */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-1 text-xs text-muted-foreground/50">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs text-slate-500">
             <span>&copy; {new Date().getFullYear()} {settings?.siteName || "BD Digital Services"}. All rights reserved.</span>
             <span className="font-bn">বাংলাদেশের যাচাইকৃত ডিজিটাল মার্কেটপ্লেস — ১০০% নিরাপদ ও বিশ্বস্ত লেনদেন।</span>
           </div>
@@ -204,12 +269,12 @@ export function MainLayout({ children }: MainLayoutProps) {
       </footer>
 
       {/* Floating Action Buttons */}
-      <div className="fixed bottom-20 md:bottom-6 right-4 md:right-6 flex flex-col gap-4 z-50">
+      <div className="fixed bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col gap-4 z-50">
         <a
           href={telegramLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#0088cc] text-white p-2.5 md:p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
+          className="bg-[#0088cc] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
           aria-label="Telegram"
         >
           <Send className="w-5 h-5" />
@@ -218,11 +283,24 @@ export function MainLayout({ children }: MainLayoutProps) {
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#22C55E] text-white p-2.5 md:p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
+          className="bg-[#22C55E] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
           aria-label="WhatsApp"
         >
           <MessageCircle className="w-5 h-5" />
         </a>
+        {messengerLink && (
+          <a
+            href={messengerLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-[#0084FF] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
+            aria-label="Messenger"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.36 2 2 6.13 2 11.7c0 2.9 1.17 5.52 3.07 7.38.15.14.24.34.24.56l.05 1.76a.8.8 0 001.12.7l1.96-.87a.8.8 0 01.54-.04 10.28 10.28 0 002.97.43c5.64 0 10-4.13 10-9.7S17.64 2 12 2zm5.98 7.55l-2.93 4.64a1.5 1.5 0 01-2.16.4l-2.33-1.75a.6.6 0 00-.72 0l-3.15 2.39c-.42.32-.97-.17-.7-.63l2.93-4.64a1.5 1.5 0 012.16-.4l2.33 1.75a.6.6 0 00.72 0l3.15-2.39c.42-.32.97.17.7.63z" />
+            </svg>
+          </a>
+        )}
       </div>
     </div>
   );

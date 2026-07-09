@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, AlertCircle } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Category, CreateCategoryBody } from "@workspace/api-client-react";
 
@@ -58,9 +58,9 @@ export default function AdminCategories() {
   const [sortOrder, setSortOrder] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  useAdminAuth();
+  const { ready, username } = useAdminAuth();
 
-  const { data: categories, isLoading } = useListCategories({
+  const { data: categories, isLoading, isError } = useListCategories({
     query: { queryKey: getListCategoriesQueryKey() }
   });
 
@@ -114,7 +114,12 @@ export default function AdminCategories() {
             queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
             toast({ title: "Category updated successfully" });
             setIsModalOpen(false);
-          }
+          },
+          onError: (err: unknown) => {
+            const apiErr = err as { data?: { error?: string }; message?: string };
+            const msg = apiErr?.data?.error ?? apiErr?.message ?? "Category update failed";
+            toast({ title: msg, variant: "destructive" });
+          },
         }
       );
     } else {
@@ -125,7 +130,12 @@ export default function AdminCategories() {
             queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
             toast({ title: "Category created successfully" });
             setIsModalOpen(false);
-          }
+          },
+          onError: (err: unknown) => {
+            const apiErr = err as { data?: { error?: string }; message?: string };
+            const msg = apiErr?.data?.error ?? apiErr?.message ?? "Category creation failed";
+            toast({ title: msg, variant: "destructive" });
+          },
         }
       );
     }
@@ -138,13 +148,20 @@ export default function AdminCategories() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListCategoriesQueryKey() });
           toast({ title: "Category deleted successfully" });
-        }
+        },
+        onError: (err: unknown) => {
+          const apiErr = err as { data?: { error?: string }; message?: string };
+          const msg = apiErr?.data?.error ?? apiErr?.message ?? "Category deletion failed";
+          toast({ title: msg, variant: "destructive" });
+        },
       }
     );
   };
 
+  if (!ready) return null;
+
   return (
-    <AdminLayout>
+    <AdminLayout username={username}>
       <div className="space-y-6">
         <AdminPageHeader
           title="Categories"
@@ -227,6 +244,15 @@ export default function AdminCategories() {
                   <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-2 text-destructive">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      <span className="text-sm font-medium">Failed to load categories. Please refresh the page.</span>
                     </div>
                   </TableCell>
                 </TableRow>

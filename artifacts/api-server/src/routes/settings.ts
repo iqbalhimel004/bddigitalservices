@@ -16,6 +16,10 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   whatsapp: "https://wa.me/8801572792499",
   telegram: "https://t.me/+8801572792499",
   facebook: "",
+  messenger: "",
+  twitter: "",
+  instagram: "",
+  tiktok: "",
   bkashNumber: "01687476714",
   nagadNumber: "01687476714",
   rocketNumber: "01687476714",
@@ -55,6 +59,12 @@ const DEFAULT_SETTINGS: Record<string, string> = {
 
 let defaultsInitialized: Promise<void> | null = null;
 
+export function initDefaultSettings(): void {
+  if (!defaultsInitialized) {
+    defaultsInitialized = ensureDefaultSettings().catch(() => { defaultsInitialized = null; });
+  }
+}
+
 async function ensureDefaultSettings() {
   const rows = await db.select({ key: siteSettingsTable.key }).from(siteSettingsTable);
   const existingKeys = new Set(rows.map(r => r.key));
@@ -79,6 +89,10 @@ router.get("/settings", publicCache(120, 600), async (_req, res): Promise<void> 
     whatsapp: settings.whatsapp ?? DEFAULT_SETTINGS.whatsapp,
     telegram: settings.telegram ?? DEFAULT_SETTINGS.telegram,
     facebook: settings.facebook ?? DEFAULT_SETTINGS.facebook,
+    messenger: settings.messenger ?? DEFAULT_SETTINGS.messenger,
+    twitter: settings.twitter ?? DEFAULT_SETTINGS.twitter,
+    instagram: settings.instagram ?? DEFAULT_SETTINGS.instagram,
+    tiktok: settings.tiktok ?? DEFAULT_SETTINGS.tiktok,
     bkashNumber: settings.bkashNumber ?? DEFAULT_SETTINGS.bkashNumber,
     nagadNumber: settings.nagadNumber ?? DEFAULT_SETTINGS.nagadNumber,
     rocketNumber: settings.rocketNumber ?? DEFAULT_SETTINGS.rocketNumber,

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { AdminLayout } from "@/components/layout/admin-layout";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -41,7 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { format, startOfDay, endOfDay, parseISO, isValid } from "date-fns";
-import { Search, X, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Search, X, ChevronUp, ChevronDown, ChevronsUpDown, AlertCircle } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
@@ -88,11 +88,11 @@ export default function AdminOrders() {
     }
   };
 
-  useAdminAuth();
+  const { ready, username } = useAdminAuth();
 
   const ordersQueryKey = getListOrdersQueryKey();
 
-  const { data: orders, isLoading } = useListOrders({
+  const { data: orders, isLoading, isError } = useListOrders({
     query: { queryKey: ordersQueryKey }
   });
 
@@ -126,7 +126,8 @@ export default function AdminOrders() {
       if (filterStatus !== "all" && order.status !== filterStatus) return false;
       if (filterPayment !== "all" && order.paymentMethod !== filterPayment) return false;
       if (fromDate || toDate) {
-        const created = new Date(order.createdAt);
+        const created = order.createdAt ? new Date(order.createdAt) : null;
+        if (!created || !isValid(created)) return true;
         if (fromDate && created < fromDate) return false;
         if (toDate && created > toDate) return false;
       }
@@ -143,8 +144,10 @@ export default function AdminOrders() {
         aVal = a.id;
         bVal = b.id;
       } else if (sortKey === "createdAt") {
-        aVal = new Date(a.createdAt).getTime();
-        bVal = new Date(b.createdAt).getTime();
+        const aDate = a.createdAt ? new Date(a.createdAt) : null;
+        const bDate = b.createdAt ? new Date(b.createdAt) : null;
+        aVal = aDate && isValid(aDate) ? aDate.getTime() : 0;
+        bVal = bDate && isValid(bDate) ? bDate.getTime() : 0;
       } else {
         aVal = (a[sortKey] ?? "").toString().toLowerCase();
         bVal = (b[sortKey] ?? "").toString().toLowerCase();
@@ -161,6 +164,11 @@ export default function AdminOrders() {
     filterPayment !== "all" ||
     dateFrom !== "" ||
     dateTo !== "";
+
+  // Clear selection when filters change so hidden orders are never bulk-updated
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [search, filterStatus, filterPayment, dateFrom, dateTo]);
 
   const clearFilters = () => {
     setSearch("");
@@ -284,8 +292,10 @@ export default function AdminOrders() {
 
   const selectedCount = selectedIds.size;
 
+  if (!ready) return null;
+
   return (
-    <AdminLayout>
+    <AdminLayout username={username}>
       <div className="space-y-6">
         <AdminPageHeader
           title="Orders"
@@ -466,6 +476,15 @@ export default function AdminOrders() {
                       </div>
                     </TableCell>
                   </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-12">
+                      <div className="flex items-center justify-center gap-2 text-destructive">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span className="text-sm font-medium">Failed to load orders. Please refresh the page.</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ) : filteredOrders.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-12 text-muted-foreground text-sm">
@@ -487,7 +506,9 @@ export default function AdminOrders() {
                         />
                       </TableCell>
                       <TableCell className="font-semibold text-primary whitespace-nowrap py-3.5">#{order.id}</TableCell>
-                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground py-3.5">{format(new Date(order.createdAt), 'MMM d, yyyy h:mm a')}</TableCell>
+                      <TableCell className="whitespace-nowrap text-xs text-muted-foreground py-3.5">
+                        {order.createdAt && isValid(new Date(order.createdAt)) ? format(new Date(order.createdAt), 'MMM d, yyyy h:mm a') : "—"}
+                      </TableCell>
                       <TableCell className="font-medium text-sm py-3.5">{order.customerName}</TableCell>
                       <TableCell className="py-3.5">
                         <div className="flex flex-col">

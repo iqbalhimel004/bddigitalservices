@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ne, and } from "drizzle-orm";
+import { eq, ne, and, count, sql } from "drizzle-orm";
 import { db, categoriesTable, productsTable, siteSettingsTable, noticesTable } from "@workspace/db";
 import {
   CreateCategoryBody,
@@ -78,6 +78,17 @@ router.put("/categories/:id", async (req, res): Promise<void> => {
 router.delete("/categories/:id", async (req, res): Promise<void> => {
   const params = DeleteCategoryParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [row] = await db
+    .select({ linkedCount: count() })
+    .from(productsTable)
+    .where(eq(productsTable.categoryId, params.data.id));
+  const linked = Number(row?.linkedCount ?? 0);
+  if (linked > 0) {
+    res.status(409).json({
+      error: `This category has ${linked} linked product${linked === 1 ? "" : "s"}. Reassign or remove them before deleting.`,
+    });
+    return;
+  }
   const [deleted] = await db.delete(categoriesTable).where(eq(categoriesTable.id, params.data.id)).returning();
   if (!deleted) { res.status(404).json({ error: "Not found" }); return; }
   res.sendStatus(204);
@@ -117,8 +128,8 @@ router.post("/products", async (req, res): Promise<void> => {
     descriptionBn: parsed.data.descriptionBn ?? null,
     descriptionEn: parsed.data.descriptionEn ?? null,
     categoryId: parsed.data.categoryId ?? null,
-    priceBdt: toAsciiDigits(parsed.data.priceBdt),
-    priceUsd: toAsciiDigits(parsed.data.priceUsd),
+    priceBdt: toAsciiDigits(parsed.data.priceBdt) || "0",
+    priceUsd: toAsciiDigits(parsed.data.priceUsd) || "0",
     badge: parsed.data.badge ?? null,
     isActive: parsed.data.isActive ?? true,
     sortOrder: parsed.data.sortOrder ?? 0,
@@ -137,8 +148,8 @@ router.put("/products/:id", async (req, res): Promise<void> => {
     descriptionBn: parsed.data.descriptionBn ?? null,
     descriptionEn: parsed.data.descriptionEn ?? null,
     categoryId: parsed.data.categoryId ?? null,
-    priceBdt: toAsciiDigits(parsed.data.priceBdt),
-    priceUsd: toAsciiDigits(parsed.data.priceUsd),
+    priceBdt: toAsciiDigits(parsed.data.priceBdt) || "0",
+    priceUsd: toAsciiDigits(parsed.data.priceUsd) || "0",
     badge: parsed.data.badge ?? null,
     isActive: parsed.data.isActive ?? true,
     sortOrder: parsed.data.sortOrder ?? 0,
@@ -161,6 +172,10 @@ const DEFAULT_SETTINGS: Record<string, string> = {
   whatsapp: "https://wa.me/8801572792499",
   telegram: "https://t.me/+8801572792499",
   facebook: "",
+  messenger: "",
+  twitter: "",
+  instagram: "",
+  tiktok: "",
   bkashNumber: "01687476714",
   nagadNumber: "01687476714",
   rocketNumber: "01687476714",
@@ -201,14 +216,16 @@ const DEFAULT_SETTINGS: Record<string, string> = {
 router.put("/settings", async (req, res): Promise<void> => {
   const parsed = UpdateSettingsBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
-  for (const [key, value] of Object.entries(parsed.data)) {
-    if (value === undefined) continue;
-    const existing = await db.select().from(siteSettingsTable).where(eq(siteSettingsTable.key, key)).limit(1);
-    if (existing.length > 0) {
-      await db.update(siteSettingsTable).set({ value: value as string }).where(eq(siteSettingsTable.key, key));
-    } else {
-      await db.insert(siteSettingsTable).values({ key, value: value as string });
-    }
+  const upsertEntries = (Object.entries(parsed.data) as [string, string | undefined][])
+    .filter((e): e is [string, string] => e[1] !== undefined);
+  if (upsertEntries.length > 0) {
+    await db
+      .insert(siteSettingsTable)
+      .values(upsertEntries.map(([key, value]) => ({ key, value })))
+      .onConflictDoUpdate({
+        target: siteSettingsTable.key,
+        set: { value: sql`excluded.value`, updatedAt: new Date() },
+      });
   }
   const rows = await db.select().from(siteSettingsTable);
   const settings: Record<string, string> = {};
@@ -218,6 +235,10 @@ router.put("/settings", async (req, res): Promise<void> => {
     whatsapp: settings.whatsapp ?? DEFAULT_SETTINGS.whatsapp,
     telegram: settings.telegram ?? DEFAULT_SETTINGS.telegram,
     facebook: settings.facebook ?? DEFAULT_SETTINGS.facebook,
+    messenger: settings.messenger ?? DEFAULT_SETTINGS.messenger,
+    twitter: settings.twitter ?? DEFAULT_SETTINGS.twitter,
+    instagram: settings.instagram ?? DEFAULT_SETTINGS.instagram,
+    tiktok: settings.tiktok ?? DEFAULT_SETTINGS.tiktok,
     bkashNumber: settings.bkashNumber ?? DEFAULT_SETTINGS.bkashNumber,
     nagadNumber: settings.nagadNumber ?? DEFAULT_SETTINGS.nagadNumber,
     rocketNumber: settings.rocketNumber ?? DEFAULT_SETTINGS.rocketNumber,

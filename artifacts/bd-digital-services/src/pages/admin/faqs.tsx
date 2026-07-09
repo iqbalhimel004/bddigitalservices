@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, HelpCircle, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, HelpCircle, Eye, EyeOff, AlertCircle } from "lucide-react";
 import type { Faq, CreateFaqBody } from "@workspace/api-client-react";
 
 const EMPTY_FORM: CreateFaqBody = {
@@ -49,13 +49,13 @@ const EMPTY_FORM: CreateFaqBody = {
 export default function AdminFaqs() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  useAdminAuth();
+  const { ready, username } = useAdminAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<Faq | null>(null);
   const [form, setForm] = useState<CreateFaqBody>(EMPTY_FORM);
 
-  const { data: faqs, isLoading } = useListAllFaqs({
+  const { data: faqs, isLoading, isError } = useListAllFaqs({
     query: { queryKey: getListAllFaqsQueryKey() },
   });
 
@@ -108,7 +108,11 @@ export default function AdminFaqs() {
             setIsModalOpen(false);
             resetForm();
           },
-          onError: () => toast({ title: "আপডেট করা সম্ভব হয়নি", variant: "destructive" }),
+          onError: (err: unknown) => {
+            const apiErr = err as { data?: { error?: string }; message?: string };
+            const msg = apiErr?.data?.error ?? apiErr?.message ?? "আপডেট করা সম্ভব হয়নি";
+            toast({ title: msg, variant: "destructive" });
+          },
         }
       );
     } else {
@@ -121,7 +125,11 @@ export default function AdminFaqs() {
             setIsModalOpen(false);
             resetForm();
           },
-          onError: () => toast({ title: "যোগ করা সম্ভব হয়নি", variant: "destructive" }),
+          onError: (err: unknown) => {
+            const apiErr = err as { data?: { error?: string }; message?: string };
+            const msg = apiErr?.data?.error ?? apiErr?.message ?? "যোগ করা সম্ভব হয়নি";
+            toast({ title: msg, variant: "destructive" });
+          },
         }
       );
     }
@@ -135,15 +143,21 @@ export default function AdminFaqs() {
           toast({ title: "FAQ মুছে ফেলা হয়েছে" });
           invalidate();
         },
-        onError: () => toast({ title: "মুছে ফেলা সম্ভব হয়নি", variant: "destructive" }),
+        onError: (err: unknown) => {
+          const apiErr = err as { data?: { error?: string }; message?: string };
+          const msg = apiErr?.data?.error ?? apiErr?.message ?? "মুছে ফেলা সম্ভব হয়নি";
+          toast({ title: msg, variant: "destructive" });
+        },
       }
     );
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  if (!ready) return null;
+
   return (
-    <AdminLayout>
+    <AdminLayout username={username}>
       <div className="space-y-6 max-w-4xl">
         <AdminPageHeader
           title="FAQ Management"
@@ -158,6 +172,14 @@ export default function AdminFaqs() {
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        ) : isError ? (
+          <div className="flex items-center gap-3 px-4 py-5 rounded-xl border border-destructive/30 bg-destructive/5">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">FAQ data could not be loaded</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Please refresh the page or check your connection.</p>
+            </div>
           </div>
         ) : faqs && faqs.length > 0 ? (
           <div className="space-y-3">

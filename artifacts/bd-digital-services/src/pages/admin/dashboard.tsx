@@ -3,7 +3,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useGetStats, getGetStatsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Tags, ShoppingCart, CheckCircle } from "lucide-react";
+import { Package, Tags, ShoppingCart, CheckCircle, AlertCircle } from "lucide-react";
 import { SyncStatusBanner } from "@/components/admin/sync-status-banner";
 import { OrdersByDayChart } from "@/components/admin/orders-by-day-chart";
 import { OrdersByStatusChart } from "@/components/admin/orders-by-status-chart";
@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
@@ -47,9 +47,9 @@ const STAT_ACCENT: Record<number, string> = {
 };
 
 export default function AdminDashboard() {
-  useAdminAuth();
+  const { ready, username } = useAdminAuth();
 
-  const { data: stats, isLoading } = useGetStats({
+  const { data: stats, isLoading, isError } = useGetStats({
     query: { queryKey: getGetStatsQueryKey() },
   });
 
@@ -60,8 +60,10 @@ export default function AdminDashboard() {
     { title: "Categories", value: stats?.totalCategories || 0, icon: Tags, color: "text-orange-400", bg: "bg-orange-500/10" },
   ];
 
+  if (!ready) return null;
+
   return (
-    <AdminLayout>
+    <AdminLayout username={username}>
       <div className="space-y-6">
         <AdminPageHeader
           title="Dashboard"
@@ -81,7 +83,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent className="pb-4">
                 <div className="text-3xl font-bold tracking-tight">
-                  {isLoading ? <div className="h-8 w-16 rounded bg-muted animate-pulse" /> : stat.value}
+                  {isLoading ? <div className="h-8 w-16 rounded bg-muted animate-pulse" /> : isError ? <span className="text-muted-foreground text-2xl">—</span> : stat.value}
                 </div>
               </CardContent>
             </Card>
@@ -93,6 +95,14 @@ export default function AdminDashboard() {
             <ChartSkeleton className="col-span-2" />
             <ChartSkeleton />
             <ChartSkeleton />
+          </div>
+        ) : isError ? (
+          <div className="flex items-center gap-3 px-4 py-4 rounded-xl border border-destructive/30 bg-destructive/5">
+            <AlertCircle className="h-5 w-5 text-destructive shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">Chart data could not be loaded</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Please refresh the page or check your connection.</p>
+            </div>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -127,6 +137,15 @@ export default function AdminDashboard() {
                       </div>
                     </TableCell>
                   </TableRow>
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-10">
+                      <div className="flex items-center justify-center gap-2 text-destructive">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span className="text-sm font-medium">Failed to load recent orders. Please refresh the page.</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 ) : stats?.recentOrders?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
@@ -152,7 +171,9 @@ export default function AdminDashboard() {
                           {order.status || "pending"}
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground pr-4 py-3">{format(new Date(order.createdAt), 'MMM d, yyyy')}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground pr-4 py-3">
+                        {order.createdAt && isValid(new Date(order.createdAt)) ? format(new Date(order.createdAt), 'MMM d, yyyy') : "—"}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

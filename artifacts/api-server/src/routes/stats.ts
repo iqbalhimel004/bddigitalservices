@@ -8,42 +8,69 @@ const router: IRouter = Router();
 router.use(requireAdmin);
 
 router.get("/stats", async (_req, res): Promise<void> => {
-  const [totalProductsResult] = await db
-    .select({ count: count() })
-    .from(productsTable);
-  const [totalCategoriesResult] = await db
-    .select({ count: count() })
-    .from(categoriesTable);
-  const [totalOrdersResult] = await db
-    .select({ count: count() })
-    .from(ordersTable);
-  const [activeProductsResult] = await db
-    .select({ count: count() })
-    .from(productsTable)
-    .where(eq(productsTable.isActive, true));
+  const now = new Date();
+  const sevenDaysAgoUtc = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6),
+  );
 
-  const recentOrders = await db
-    .select({
-      id: ordersTable.id,
-      customerName: ordersTable.customerName,
-      phone: ordersTable.phone,
-      email: ordersTable.email,
-      productId: ordersTable.productId,
-      paymentMethod: ordersTable.paymentMethod,
-      message: ordersTable.message,
-      status: ordersTable.status,
-      createdAt: ordersTable.createdAt,
-      productName: productsTable.nameEn,
-    })
-    .from(ordersTable)
-    .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
-    .orderBy(desc(ordersTable.createdAt))
-    .limit(5);
-
-  const statusRows = await db
-    .select({ status: ordersTable.status, cnt: count() })
-    .from(ordersTable)
-    .groupBy(ordersTable.status);
+  const [
+    [totalProductsResult],
+    [totalCategoriesResult],
+    [totalOrdersResult],
+    [activeProductsResult],
+    recentOrders,
+    statusRows,
+    paymentRows,
+    dayRows,
+  ] = await Promise.all([
+    db
+      .select({ count: count() })
+      .from(productsTable),
+    db
+      .select({ count: count() })
+      .from(categoriesTable),
+    db
+      .select({ count: count() })
+      .from(ordersTable),
+    db
+      .select({ count: count() })
+      .from(productsTable)
+      .where(eq(productsTable.isActive, true)),
+    db
+      .select({
+        id: ordersTable.id,
+        customerName: ordersTable.customerName,
+        phone: ordersTable.phone,
+        email: ordersTable.email,
+        productId: ordersTable.productId,
+        paymentMethod: ordersTable.paymentMethod,
+        message: ordersTable.message,
+        status: ordersTable.status,
+        createdAt: ordersTable.createdAt,
+        productName: productsTable.nameEn,
+      })
+      .from(ordersTable)
+      .leftJoin(productsTable, eq(ordersTable.productId, productsTable.id))
+      .orderBy(desc(ordersTable.createdAt))
+      .limit(5),
+    db
+      .select({ status: ordersTable.status, cnt: count() })
+      .from(ordersTable)
+      .groupBy(ordersTable.status),
+    db
+      .select({ method: ordersTable.paymentMethod, cnt: count() })
+      .from(ordersTable)
+      .groupBy(ordersTable.paymentMethod),
+    db
+      .select({
+        date: sql<string>`(${ordersTable.createdAt} AT TIME ZONE 'UTC')::date`.as("date"),
+        cnt: count(),
+      })
+      .from(ordersTable)
+      .where(gte(ordersTable.createdAt, sevenDaysAgoUtc))
+      .groupBy(sql`(${ordersTable.createdAt} AT TIME ZONE 'UTC')::date`)
+      .orderBy(sql`(${ordersTable.createdAt} AT TIME ZONE 'UTC')::date ASC`),
+  ]);
 
   const ordersByStatus: Record<string, number> = {
     pending: 0,
@@ -55,30 +82,10 @@ router.get("/stats", async (_req, res): Promise<void> => {
     if (row.status) ordersByStatus[row.status] = Number(row.cnt);
   }
 
-  const paymentRows = await db
-    .select({ method: ordersTable.paymentMethod, cnt: count() })
-    .from(ordersTable)
-    .groupBy(ordersTable.paymentMethod);
-
   const ordersByPayment: Record<string, number> = {};
   for (const row of paymentRows) {
     ordersByPayment[row.method] = Number(row.cnt);
   }
-
-  const now = new Date();
-  const sevenDaysAgoUtc = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 6),
-  );
-
-  const dayRows = await db
-    .select({
-      date: sql<string>`(${ordersTable.createdAt} AT TIME ZONE 'UTC')::date`.as("date"),
-      cnt: count(),
-    })
-    .from(ordersTable)
-    .where(gte(ordersTable.createdAt, sevenDaysAgoUtc))
-    .groupBy(sql`(${ordersTable.createdAt} AT TIME ZONE 'UTC')::date`)
-    .orderBy(sql`(${ordersTable.createdAt} AT TIME ZONE 'UTC')::date ASC`);
 
   const dayMap = new Map<string, number>();
   for (const row of dayRows) {

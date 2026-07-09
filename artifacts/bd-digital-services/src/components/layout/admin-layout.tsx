@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Helmet } from "react-helmet-async";
+import { useQueryClient } from "@tanstack/react-query";
 import { 
   LayoutDashboard, 
   Package, 
@@ -17,14 +18,17 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ADMIN_ME_QUERY_KEY } from "@/hooks/use-admin-auth";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
+  username?: string;
 }
 
-export function AdminLayout({ children }: AdminLayoutProps) {
+export function AdminLayout({ children, username }: AdminLayoutProps) {
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -49,7 +53,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const handleLogout = async () => {
     try {
       const csrf = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-      await fetch("/api/admin/logout", {
+      const _apiBase = import.meta.env.BASE_URL.replace(/\/$/, "");
+      await fetch(`${_apiBase}/api/admin/logout`, {
         method: "POST",
         credentials: "include",
         headers: csrf ? { "x-csrf-token": decodeURIComponent(csrf[1]) } : {},
@@ -57,6 +62,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     } catch {
       // best-effort
     }
+    queryClient.removeQueries({ queryKey: ADMIN_ME_QUERY_KEY });
     localStorage.removeItem("admin_logged_in");
     setLocation("/admin");
   };
@@ -72,7 +78,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin/settings", label: "Settings", icon: Settings },
   ];
 
-  const SidebarContent = () => (
+  const sidebarContent = (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 px-5 py-5 border-b border-border/60">
         <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary/10 ring-1 ring-primary/20 shrink-0">
@@ -113,10 +119,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       <div className="px-3 py-4 border-t border-border/60 space-y-2">
         <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-muted/40">
           <div className="w-7 h-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-primary">A</span>
+            <span className="text-xs font-bold text-primary">{username ? username[0].toUpperCase() : "A"}</span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold text-foreground leading-tight">Admin</p>
+            <p className="text-xs font-semibold text-foreground leading-tight truncate">{username || "Admin"}</p>
             <p className="text-[10px] text-muted-foreground leading-tight">Administrator</p>
           </div>
         </div>
@@ -165,12 +171,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         transition-transform duration-300 ease-in-out
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
-        <SidebarContent />
+        {sidebarContent}
       </div>
 
       {/* Desktop Sidebar */}
       <div className="hidden md:flex flex-col w-64 bg-card border-r border-border/60 shrink-0">
-        <SidebarContent />
+        {sidebarContent}
       </div>
 
       {/* Main Content */}

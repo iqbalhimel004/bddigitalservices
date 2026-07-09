@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { createHash } from "crypto";
 import { db, pageVisitsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 const countryCache = new Map<string, string | null>();
@@ -105,19 +106,45 @@ router.post("/track", trackLimiter, async (req: Request, res: Response): Promise
       }
     }
 
-    const country = await lookupCountry(rawIp);
+    // Check the in-memory cache synchronously (O(1), no I/O).
+    // undefined = not yet cached; null/string = cached result.
+    const cachedCountry: string | null | undefined = countryCache.has(rawIp)
+      ? (countryCache.get(rawIp) ?? null)
+      : undefined;
 
-    await db.insert(pageVisitsTable).values({
-      sessionId: sessionId.slice(0, 100),
-      pagePath,
-      referrer: referrerDomain,
-      deviceType,
-      browser,
-      ipHash,
-      country,
-    });
+    // Insert the visit row immediately, using the cached country when available.
+    // For cache-miss IPs, country starts as null and is updated in the background.
+    const [inserted] = await db
+      .insert(pageVisitsTable)
+      .values({
+        sessionId: sessionId.slice(0, 100),
+        pagePath,
+        referrer: referrerDomain,
+        deviceType,
+        browser,
+        ipHash,
+        country: cachedCountry ?? null,
+      })
+      .returning({ id: pageVisitsTable.id });
 
+    // Respond immediately — the browser is unblocked from here.
     res.status(204).end();
+
+    // For cache-miss IPs, perform geolocation in the background and patch
+    // the row once resolved. Failures are silently discarded so they never
+    // affect future requests or surface as unhandled rejections.
+    if (cachedCountry === undefined && inserted != null) {
+      void lookupCountry(rawIp)
+        .then(async (country) => {
+          if (country !== null) {
+            await db
+              .update(pageVisitsTable)
+              .set({ country })
+              .where(eq(pageVisitsTable.id, inserted.id));
+          }
+        })
+        .catch(() => {});
+    }
   } catch {
     res.status(500).json({ error: "Internal server error" });
   }

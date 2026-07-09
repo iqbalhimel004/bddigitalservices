@@ -31,7 +31,7 @@ export default function AdminSettings() {
 
   const changeCredsMutation = useChangeAdminCredentials();
 
-  const { username: currentUsername } = useAdminAuth();
+  const { ready, username: currentUsername } = useAdminAuth();
 
   const handleCredChange = (field: keyof typeof credForm, value: string) => {
     setCredForm((prev) => ({ ...prev, [field]: value }));
@@ -78,6 +78,10 @@ export default function AdminSettings() {
     whatsapp: "",
     telegram: "",
     facebook: "",
+    messenger: "",
+    twitter: "",
+    instagram: "",
+    tiktok: "",
     bkashNumber: "",
     nagadNumber: "",
     rocketNumber: "",
@@ -146,14 +150,21 @@ export default function AdminSettings() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
           toast({ title: "Settings updated successfully" });
-        }
+        },
+        onError: (err: unknown) => {
+          const apiErr = err as { data?: { error?: string }; message?: string };
+          const msg = apiErr?.data?.error ?? apiErr?.message ?? "Settings save failed";
+          toast({ title: msg, variant: "destructive" });
+        },
       }
     );
   };
 
+  if (!ready) return null;
+
   if (isLoading) {
     return (
-      <AdminLayout>
+      <AdminLayout username={currentUsername}>
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -169,7 +180,7 @@ export default function AdminSettings() {
   ];
 
   return (
-    <AdminLayout>
+    <AdminLayout username={currentUsername}>
       <div className="space-y-8 max-w-4xl">
         <AdminPageHeader
           title="Settings"
@@ -433,6 +444,42 @@ export default function AdminSettings() {
                       value={formData.facebook || ""} 
                       onChange={(e) => handleInputChange("facebook", e.target.value)} 
                       placeholder="https://facebook.com/..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="messenger" className="text-sm font-medium">Messenger Link</Label>
+                    <Input
+                      id="messenger"
+                      value={formData.messenger || ""}
+                      onChange={(e) => handleInputChange("messenger", e.target.value)}
+                      placeholder="https://m.me/..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="twitter" className="text-sm font-medium">X / Twitter Link</Label>
+                    <Input
+                      id="twitter"
+                      value={formData.twitter || ""}
+                      onChange={(e) => handleInputChange("twitter", e.target.value)}
+                      placeholder="https://x.com/..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="instagram" className="text-sm font-medium">Instagram Link</Label>
+                    <Input
+                      id="instagram"
+                      value={formData.instagram || ""}
+                      onChange={(e) => handleInputChange("instagram", e.target.value)}
+                      placeholder="https://instagram.com/..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="tiktok" className="text-sm font-medium">TikTok Link</Label>
+                    <Input
+                      id="tiktok"
+                      value={formData.tiktok || ""}
+                      onChange={(e) => handleInputChange("tiktok", e.target.value)}
+                      placeholder="https://tiktok.com/@..."
                     />
                   </div>
                 </div>

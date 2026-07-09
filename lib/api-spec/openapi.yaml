@@ -714,6 +714,14 @@ components:
           type: string
         facebook:
           type: string
+        messenger:
+          type: string
+        twitter:
+          type: string
+        instagram:
+          type: string
+        tiktok:
+          type: string
         bkashNumber:
           type: string
         nagadNumber:
