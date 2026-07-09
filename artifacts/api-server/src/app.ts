@@ -28,6 +28,8 @@ const allowedOrigins = isProduction
   : [
       /^https?:\/\/localhost(:\d+)?$/,
       /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+      // v0 / Vercel preview domains (development only)
+      /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.(vusercontent\.net|v0\.app|v0\.dev|vercel\.app)$/,
       ...(replitDevDomainPattern ? [replitDevDomainPattern] : []),
     ];
 
