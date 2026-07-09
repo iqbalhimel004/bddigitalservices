@@ -15,7 +15,7 @@ import { execSync } from 'child_process';
 import { join } from 'path';
 import { createHash } from 'crypto';
 
-const TOKEN   = process.env.GITHUB_TOKEN || process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+const TOKEN   = process.env.GITHUB_PERSONAL_ACCESS_TOKEN || process.env.GITHUB_TOKEN;
 const OWNER   = 'iqbalhimel004';
 const REPO    = 'bddigitalservices';
 const API     = `https://api.github.com/repos/${OWNER}/${REPO}`;
@@ -58,9 +58,22 @@ async function createBlob(filepath) {
 
 // ── main ──────────────────────────────────────────────────────────────────────
 
-// Get all tracked files
-const files = execSync('git -C ' + WORKDIR + ' ls-files', { encoding: 'utf8' })
+// Get all tracked files along with their local git blob SHA (content hash).
+// `git ls-files -s` outputs: "<mode> <blob-sha> <stage>\t<path>"
+// This lets us detect files whose CONTENT changed even if the path already
+// exists on GitHub — comparing paths alone (old behavior) silently reused
+// stale blobs forever for any previously-synced file.
+const lsFilesOut = execSync('git -C ' + WORKDIR + ' ls-files -s', { encoding: 'utf8' })
   .trim().split('\n').filter(Boolean);
+const files = [];
+const localBlobShas = new Map(); // path → local git blob sha
+for (const line of lsFilesOut) {
+  const tabIdx = line.indexOf('\t');
+  const meta = line.slice(0, tabIdx).split(/\s+/);
+  const filePath = line.slice(tabIdx + 1);
+  localBlobShas.set(filePath, meta[1]);
+  files.push(filePath);
+}
 
 // Get existing tree from GitHub's latest commit
 let baseTreeSha = null;
@@ -89,17 +102,18 @@ if (REMOTE_SHA) {
 console.log(`Existing blobs on GitHub: ${existingBlobs.size}`);
 console.log(`Local files tracked:      ${files.length}`);
 
-// Determine which files need uploading (all files not already in GitHub tree)
-// Since we can't cheaply compare content without downloading blobs,
-// we simply re-use the existing SHA for files that are present and only
-// upload files that are missing from GitHub entirely.
+// Determine which files need uploading: reuse the existing GitHub blob only
+// when its SHA matches the local git blob SHA (i.e. content is identical).
+// Any content change — even to an already-tracked path — forces a re-upload.
 const treeItems = [];
 let reused = 0, uploaded = 0, failed = 0;
 const toUpload = [];
 
 for (const fp of files) {
-  if (existingBlobs.has(fp)) {
-    treeItems.push({ path: fp, mode: '100644', type: 'blob', sha: existingBlobs.get(fp) });
+  const localSha = localBlobShas.get(fp);
+  const remoteSha = existingBlobs.get(fp);
+  if (remoteSha && remoteSha === localSha) {
+    treeItems.push({ path: fp, mode: '100644', type: 'blob', sha: remoteSha });
     reused++;
   } else {
     toUpload.push(fp);

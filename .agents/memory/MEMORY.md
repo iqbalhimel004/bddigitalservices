@@ -1,0 +1,1 @@
+- [GitHub API-sync stale blob bug](github-sync-stale-blobs.md) — custom sync script reused old blobs by path match, silently never pushing content edits despite "success" logs.
