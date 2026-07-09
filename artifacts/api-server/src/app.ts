@@ -167,7 +167,10 @@ if (isProduction) {
   const frontendBuildPath = path.resolve(__dirname, "../../bd-digital-services/dist/public");
   app.use(express.static(frontendBuildPath));
 
-  app.get("*", (_req, res) => {
+  // Express 5: bare "*" is no longer a valid path pattern ("Missing parameter
+  // name" crash at startup). "/{*splat}" matches every remaining GET route,
+  // including "/", so the SPA fallback works for all client-side routes.
+  app.get("/{*splat}", (_req, res) => {
     res.sendFile(path.join(frontendBuildPath, "index.html"));
   });
 }
