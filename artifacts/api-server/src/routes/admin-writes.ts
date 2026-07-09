@@ -66,10 +66,15 @@ router.put("/categories/:id", async (req, res): Promise<void> => {
       return;
     }
   }
+  // Only update fields that were explicitly provided; omitting sortOrder/isActive
+  // must NOT reset them to defaults (bug #3: values were being reset to 0/true).
   const [cat] = await db.update(categoriesTable).set({
-    ...parsed.data,
-    sortOrder: parsed.data.sortOrder ?? 0,
-    isActive: parsed.data.isActive ?? true,
+    nameBn: parsed.data.nameBn,
+    nameEn: parsed.data.nameEn,
+    slug: parsed.data.slug,
+    icon: parsed.data.icon,
+    ...(parsed.data.sortOrder !== undefined ? { sortOrder: parsed.data.sortOrder } : {}),
+    ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {}),
   }).where(eq(categoriesTable.id, params.data.id)).returning();
   if (!cat) { res.status(404).json({ error: "Not found" }); return; }
   res.json(cat);
@@ -151,8 +156,9 @@ router.put("/products/:id", async (req, res): Promise<void> => {
     priceBdt: toAsciiDigits(parsed.data.priceBdt) || "0",
     priceUsd: toAsciiDigits(parsed.data.priceUsd) || "0",
     badge: parsed.data.badge ?? null,
-    isActive: parsed.data.isActive ?? true,
-    sortOrder: parsed.data.sortOrder ?? 0,
+    // Same fix as categories: don't reset isActive/sortOrder when omitted.
+    ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {}),
+    ...(parsed.data.sortOrder !== undefined ? { sortOrder: parsed.data.sortOrder } : {}),
   }).where(eq(productsTable.id, params.data.id)).returning();
   if (!product) { res.status(404).json({ error: "Not found" }); return; }
   res.json(await getProductFull(product.id));

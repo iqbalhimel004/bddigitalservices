@@ -19,6 +19,25 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 
 const VALID_PAYMENT_METHODS = ["bkash", "nagad", "rocket"] as const;
 
+/** Convert Bengali (০-৯) and Arabic-Indic (٠-٩) digits to ASCII digits. */
+function toAsciiDigits(value: string): string {
+  return value
+    .replace(/[০-৯]/g, (d) => String(d.codePointAt(0)! - 0x09e6))
+    .replace(/[٠-٩]/g, (d) => String(d.codePointAt(0)! - 0x0660));
+}
+
+/**
+ * Normalize and validate a Bangladeshi mobile number.
+ * Accepts formats like 01712345678, +8801712345678, 8801712345678,
+ * with optional spaces/dashes and Bengali digits.
+ * Returns the normalized local form (01XXXXXXXXX) or null if invalid.
+ */
+function normalizeBdPhone(raw: string): string | null {
+  const digits = toAsciiDigits(raw).replace(/[\s\-()]/g, "");
+  const m = digits.match(/^(?:\+?880|880)?(01[3-9]\d{8})$/);
+  return m ? m[1] : null;
+}
+
 // GET /orders — admin only
 router.get("/orders", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db
@@ -52,6 +71,31 @@ router.post("/orders", ordersLimiter, async (req, res): Promise<void> => {
     return;
   }
 
+  // Bug #4 fix: reject empty/junk customer names and invalid phone numbers.
+  const customerName = parsed.data.customerName.trim();
+  if (customerName.length < 2 || customerName.length > 100) {
+    res.status(400).json({ error: "Customer name must be between 2 and 100 characters." });
+    return;
+  }
+
+  const normalizedPhone = normalizeBdPhone(parsed.data.phone);
+  if (!normalizedPhone) {
+    res.status(400).json({ error: "Invalid phone number. Please provide a valid Bangladeshi mobile number (e.g. 01XXXXXXXXX)." });
+    return;
+  }
+
+  const email = parsed.data.email?.trim() || null;
+  if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+    res.status(400).json({ error: "Invalid email address." });
+    return;
+  }
+
+  const message = parsed.data.message?.trim() || null;
+  if (message && message.length > 2000) {
+    res.status(400).json({ error: "Message is too long (max 2000 characters)." });
+    return;
+  }
+
   if (parsed.data.productId != null) {
     const [activeProduct] = await db
       .select({ id: productsTable.id })
@@ -65,12 +109,12 @@ router.post("/orders", ordersLimiter, async (req, res): Promise<void> => {
   }
 
   const data = {
-    customerName: parsed.data.customerName,
-    phone: parsed.data.phone,
-    email: parsed.data.email ?? null,
+    customerName,
+    phone: normalizedPhone,
+    email,
     productId: parsed.data.productId ?? null,
     paymentMethod: parsed.data.paymentMethod,
-    message: parsed.data.message ?? null,
+    message,
   };
   const [order] = await db.insert(ordersTable).values(data).returning();
 
@@ -180,7 +224,11 @@ router.patch("/orders/:id/status", requireAdmin, async (req: Request<{ id: strin
     return;
   }
 
-  const allowed = ALLOWED_TRANSITIONS[current.status];
+  // Bug #5 fix: defend against null/unknown status in the DB. If the stored
+  // status is not a known state, allow transitioning to any valid status
+  // so the order can be repaired instead of crashing the server.
+  const allowed: readonly OrderStatus[] =
+    (current.status && ALLOWED_TRANSITIONS[current.status as OrderStatus]) || VALID_STATUSES;
   if (!allowed.includes(newStatus)) {
     res.status(422).json({
       error: `Cannot transition order from '${current.status}' to '${newStatus}'. Allowed: ${allowed.length ? allowed.join(", ") : "none (final state)"}`,
@@ -218,6 +266,21 @@ router.patch("/orders/:id/status", requireAdmin, async (req: Request<{ id: strin
     .limit(1);
 
   res.json(row);
+});
+
+// DELETE /orders/:id — admin only (bug #6 fix: admins previously had no way to delete orders)
+router.delete("/orders/:id", requireAdmin, async (req: Request<{ id: string }>, res): Promise<void> => {
+  const id = parseInt(req.params.id, 10);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid order ID" });
+    return;
+  }
+  const [deleted] = await db.delete(ordersTable).where(eq(ordersTable.id, id)).returning();
+  if (!deleted) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+  res.sendStatus(204);
 });
 
 export default router;
