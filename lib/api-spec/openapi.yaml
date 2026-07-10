@@ -575,6 +575,8 @@ components:
           type: string
         badge:
           type: ["string", "null"]
+        logo:
+          type: ["string", "null"]
         isActive:
           type: boolean
         sortOrder:
@@ -609,6 +611,8 @@ components:
         priceUsd:
           type: string
         badge:
+          type: ["string", "null"]
+        logo:
           type: ["string", "null"]
         isActive:
           type: boolean

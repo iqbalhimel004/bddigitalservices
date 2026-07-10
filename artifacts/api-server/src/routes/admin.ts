@@ -74,10 +74,16 @@ async function getAdminCredentials(): Promise<{ username: string; passwordHash: 
   return { username, passwordHash };
 }
 
+// In development the app runs inside the v0 preview iframe (cross-site),
+// where browsers block SameSite=strict cookies. Use SameSite=none + Secure
+// in development so the session survives inside the iframe; keep strict in production.
+const cookieSameSite = isProduction ? ("strict" as const) : ("none" as const);
+const cookieSecure = true;
+
 function setAuthCookies(res: Response, sessionId: string, csrfToken: string): void {
   const baseOpts = {
-    secure: isProduction,
-    sameSite: "strict" as const,
+    secure: cookieSecure,
+    sameSite: cookieSameSite,
     path: "/",
     maxAge: SESSION_TTL_SECONDS * 1000,
   };
@@ -86,7 +92,7 @@ function setAuthCookies(res: Response, sessionId: string, csrfToken: string): vo
 }
 
 function clearAuthCookies(res: Response): void {
-  const baseOpts = { path: "/", sameSite: "strict" as const, secure: isProduction };
+  const baseOpts = { path: "/", sameSite: cookieSameSite, secure: cookieSecure };
   res.clearCookie(SESSION_COOKIE, { ...baseOpts, httpOnly: true });
   res.clearCookie(CSRF_COOKIE, { ...baseOpts, httpOnly: false });
 }

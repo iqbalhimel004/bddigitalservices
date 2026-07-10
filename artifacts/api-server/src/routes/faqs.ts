@@ -7,9 +7,11 @@ import { adminLimiter } from "../middlewares/rateLimits";
 
 const router: IRouter = Router();
 
-function publicCache(maxAge: number, swr: number) {
+function publicCache(_maxAge: number, _swr: number) {
   return (_req: Request, res: Response, next: NextFunction) => {
-    res.setHeader("Cache-Control", `public, max-age=${maxAge}, stale-while-revalidate=${swr}`);
+    // no-cache: the browser must revalidate on every request so admin edits
+    // show up immediately. Express's built-in ETag still allows cheap 304s.
+    res.setHeader("Cache-Control", "no-cache");
     next();
   };
 }
@@ -23,21 +25,32 @@ interface FaqBodyType {
   isActive?: boolean;
 }
 
+const MAX_QUESTION_LENGTH = 500;
+const MAX_ANSWER_LENGTH = 5000;
+
+function validText(value: unknown, maxLength: number): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > maxLength) return null;
+  return trimmed;
+}
+
 function parseFaqBody(body: unknown): { ok: true; data: FaqBodyType } | { ok: false } {
   if (!body || typeof body !== "object") return { ok: false };
   const b = body as Record<string, unknown>;
-  if (typeof b.questionEn !== "string" || !b.questionEn.trim()) return { ok: false };
-  if (typeof b.questionBn !== "string" || !b.questionBn.trim()) return { ok: false };
-  if (typeof b.answerEn !== "string" || !b.answerEn.trim()) return { ok: false };
-  if (typeof b.answerBn !== "string" || !b.answerBn.trim()) return { ok: false };
+  const questionEn = validText(b.questionEn, MAX_QUESTION_LENGTH);
+  const questionBn = validText(b.questionBn, MAX_QUESTION_LENGTH);
+  const answerEn = validText(b.answerEn, MAX_ANSWER_LENGTH);
+  const answerBn = validText(b.answerBn, MAX_ANSWER_LENGTH);
+  if (!questionEn || !questionBn || !answerEn || !answerBn) return { ok: false };
   return {
     ok: true,
     data: {
-      questionEn: b.questionEn,
-      questionBn: b.questionBn,
-      answerEn: b.answerEn,
-      answerBn: b.answerBn,
-      sortOrder: typeof b.sortOrder === "number" ? b.sortOrder : 0,
+      questionEn,
+      questionBn,
+      answerEn,
+      answerBn,
+      sortOrder: typeof b.sortOrder === "number" && Number.isFinite(b.sortOrder) ? b.sortOrder : 0,
       isActive: typeof b.isActive === "boolean" ? b.isActive : true,
     },
   };

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { SeoHead } from "@/components/seo-head";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -32,6 +33,7 @@ import {
   Search, Users, Clock, Truck, X
 } from "lucide-react";
 import type { Product } from "@workspace/api-client-react";
+import { getBrandLogoUrl, HERO_BRANDS } from "@/lib/brand-logos";
 
 const FALLBACK_FAQS = [
   {
@@ -117,6 +119,21 @@ export default function Home() {
 
   const products = isAllCategory ? allActiveProducts : filteredProducts;
 
+  // When arriving with a hash (e.g. /#order-form from a product page), scroll to
+  // the section after the products data has rendered. Native browser scrolling
+  // doesn't work reliably here because sections render/shift after data loads.
+  const productsLoaded = allActiveProducts !== undefined;
+  useEffect(() => {
+    if (!productsLoaded) return;
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    // Wait a frame so the freshly-rendered cards are laid out first.
+    const timer = setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [productsLoaded]);
+
   const selectedProduct = useMemo(
     () => allActiveProducts?.find(p => p.id.toString() === selectedProductId) ?? null,
     [allActiveProducts, selectedProductId]
@@ -159,6 +176,21 @@ export default function Home() {
       toast({ title: "Please select a product and payment method", variant: "destructive" });
       return;
     }
+    // Validate Bangladeshi mobile numbers. Must mirror the server's
+    // normalizeBdPhone rule in api-server/src/routes/orders.ts exactly
+    // (including Bengali digit support), so the client never accepts a
+    // number the server would reject, or vice versa.
+    const normalizedPhone = phone
+      .replace(/[\u09E6-\u09EF]/g, (d) => String(d.charCodeAt(0) - 0x09e6))
+      .replace(/[\s()-]/g, "");
+    if (!/^(?:\+?880|880)?01[3-9]\d{8}$/.test(normalizedPhone)) {
+      toast({
+        title: "Invalid phone number",
+        description: "সঠিক মোবাইল নম্বর দিন (যেমন: 01712345678)",
+        variant: "destructive",
+      });
+      return;
+    }
     createOrderMutation.mutate(
       {
         data: {
@@ -194,7 +226,17 @@ export default function Home() {
     let msg: string;
     if (product) {
       const template = settings?.whatsappProductMsg || "Hello BD Digital Services, I want to order: {product} (Price: ৳{price}). Please guide me.";
-      msg = template.replace("{product}", product.nameEn).replace("{price}", String(product.priceBdt));
+      const priceNum = parseFloat(String(product.priceBdt ?? 0));
+      if (priceNum > 0) {
+        msg = template.replace("{product}", product.nameEn).replace("{price}", String(product.priceBdt));
+      } else {
+        // "Contact for Price" products: strip the price part (e.g. "(Price: ৳{price})")
+        // so we never send "Price: ৳0.00" to the customer.
+        msg = template
+          .replace(/\s*\([^()]*\{price\}[^()]*\)/, "")
+          .replace(/\{price\}/g, "")
+          .replace("{product}", product.nameEn);
+      }
     } else {
       msg = settings?.whatsappGenericMsg || "Hello BD Digital Services, I want to order.";
     }
@@ -457,17 +499,40 @@ export default function Home() {
               ))}
             </motion.div>
 
+            {/* Trusted brands strip */}
+            <motion.div variants={fadeIn} className="pt-6">
+              <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-widest mb-4">
+                Premium accounts &amp; subscriptions for
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2.5">
+                {HERO_BRANDS.map(brand => (
+                  <div
+                    key={brand.name}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border/60 hover:border-primary/30 transition-colors"
+                    title={brand.name}
+                  >
+                    <img src={brand.url || "/placeholder.svg"} alt={brand.name} className="w-4 h-4 object-contain" loading="lazy" />
+                    <span className="text-xs font-medium text-muted-foreground">{brand.name}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
           </motion.div>
         </div>
       </section>
 
       {/* Featured Products */}
       {featuredProducts && featuredProducts.length > 0 && (
-        <section className="py-16 md:py-24 bg-muted/20 border-y border-border">
-          <div className="container mx-auto px-4">
+        <section className="py-16 md:py-24 relative overflow-hidden border-y border-primary/15 bg-gradient-to-b from-primary/[0.06] via-primary/[0.03] to-transparent">
+          {/* Subtle ambient glow to set the section apart */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+            <div className="absolute top-[-120px] left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-primary/[0.06] blur-[110px]" />
+          </div>
+          <div className="container mx-auto px-4 relative z-10">
             <div className="text-center mb-8 md:mb-12">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
-                <Star className="w-3 h-3" /> Popular Choices
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 text-xs font-semibold mb-4 border border-amber-500/25 uppercase tracking-widest">
+                <Star className="w-3 h-3 fill-current" /> Popular Choices
               </div>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-3 text-foreground">Best Sellers</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto font-bn">আমাদের সর্বাধিক বিক্রিত ডিজিটাল সার্ভিস ও একাউন্ট</p>
@@ -477,6 +542,7 @@ export default function Home() {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  featured
                   categoryIcon={product.categoryId != null ? (categoryIconMap[product.categoryId] ?? "📦") : "📦"}
                   onOrder={() => handleWhatsAppOrder(product)}
                   onFormOrder={id => {
@@ -491,7 +557,7 @@ export default function Home() {
       )}
 
       {/* Product Catalog */}
-      <section id="products" className="py-16 md:py-24 relative">
+      <section id="products" className="scroll-mt-20 py-16 md:py-24 relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8 md:mb-12">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
@@ -526,8 +592,8 @@ export default function Home() {
           </div>
 
           <Tabs defaultValue="all" value={activeCategory} onValueChange={v => { setActiveCategory(v); setSearchQuery(""); }} className="w-full">
-            <div className="flex justify-center mb-8 md:mb-10 overflow-x-auto pb-1 scrollbar-hide">
-              <TabsList className="h-auto p-1 bg-card border border-border/60 rounded-xl inline-flex gap-0.5 shadow-sm">
+            <div className="flex justify-center mb-8 md:mb-10 pb-1">
+              <TabsList className="h-auto p-1 bg-card border border-border/60 rounded-xl flex flex-wrap justify-center gap-0.5 shadow-sm max-w-full">
                 <TabsTrigger
                   value="all"
                   className="rounded-lg px-3.5 md:px-5 py-2.5 text-sm font-medium text-muted-foreground transition-all
@@ -585,7 +651,7 @@ export default function Home() {
       </section>
 
       {/* How to Order */}
-      <section id="how-to-order" className="py-16 md:py-24 bg-muted/20 border-y border-border relative overflow-hidden">
+      <section id="how-to-order" className="scroll-mt-20 py-16 md:py-24 bg-muted/20 border-y border-border relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-primary/[0.04] blur-[80px]" />
         </div>
@@ -701,7 +767,7 @@ export default function Home() {
       </section>
 
       {/* Order Form & Payment Section */}
-      <section id="order-form" className="py-16 md:py-24 relative">
+      <section id="order-form" className="scroll-mt-20 py-16 md:py-24 relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10 md:mb-14">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
@@ -816,7 +882,7 @@ export default function Home() {
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Phone / WhatsApp *</Label>
-                        <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="01XXX-XXXXXX" className="bg-muted/30 border-border/60 focus-visible:ring-primary/20 focus-visible:border-primary/40" />
+                        <Input id="phone" type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="01XXX-XXXXXX" className="bg-muted/30 border-border/60 focus-visible:ring-primary/20 focus-visible:border-primary/40" />
                       </div>
                     </div>
 
@@ -892,7 +958,7 @@ export default function Home() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-16 md:py-24 bg-muted/20 border-t border-border">
+      <section id="faq" className="scroll-mt-20 py-16 md:py-24 bg-muted/20 border-t border-border">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="text-center mb-8 md:mb-12">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
@@ -930,37 +996,67 @@ export default function Home() {
   );
 }
 
-function ProductCard({ product, categoryIcon, onOrder, onFormOrder }: {
+function ProductCard({ product, categoryIcon, onOrder, onFormOrder, featured = false }: {
   product: Product;
   categoryIcon: string;
   onOrder: () => void;
   onFormOrder: (id: number) => void;
+  /** Featured (Best Seller) cards get an amber ribbon and a stronger border. */
+  featured?: boolean;
 }) {
-  const productUrl = `${import.meta.env.BASE_URL}products/${product.id}`;
   const priceNum = parseFloat(product.priceBdt || "0");
   const priceDisplay = !priceNum ? "Contact for Price" : `৳${product.priceBdt}`;
   const priceIsFree = !priceNum;
+  // Priority: admin-uploaded logo > auto brand logo > category icon
+  const brandLogoUrl = product.logo || getBrandLogoUrl(product.nameEn);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const showBrandLogo = brandLogoUrl != null && brandLogoUrl !== "" && !logoFailed;
 
   return (
-    <div className="group relative flex flex-col h-full bg-card border border-border/70 rounded-xl overflow-hidden hover:border-primary/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/[0.09] transition-all duration-300">
+    <div className={`group relative flex flex-col h-full bg-card rounded-xl overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 ${
+      featured
+        ? "border-2 border-amber-400/40 hover:border-amber-400/70 shadow-md shadow-amber-500/[0.06] hover:shadow-amber-500/[0.14]"
+        : "border border-border/70 hover:border-primary/30 hover:shadow-primary/[0.09]"
+    }`}>
 
       {/* Top accent line — appears on hover */}
-      <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      <div className={`absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+        featured ? "from-amber-400/0 via-amber-400 to-amber-400/0" : "from-primary/0 via-primary to-primary/0"
+      }`} />
 
       {/* Card Header */}
       <div className="p-3 pb-2.5 md:p-5 md:pb-4 relative">
+        {featured && !product.badge && (
+          <span className="absolute top-3 right-3 md:top-4 md:right-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-600 text-[10px] font-bold uppercase tracking-widest border border-amber-500/25">
+            <Star className="w-2.5 h-2.5 fill-current" /> Best Seller
+          </span>
+        )}
         {product.badge && (
           <span className="absolute top-3 right-3 md:top-4 md:right-4 inline-flex items-center px-2 py-0.5 rounded-md bg-primary/15 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20">
             {product.badge}
           </span>
         )}
 
-        {/* Category icon */}
+        {/* Brand logo (falls back to category icon) */}
         <div
-          className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/[0.10] flex items-center justify-center text-2xl mb-2 select-none group-hover:bg-primary/15 transition-colors"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 select-none transition-colors ${
+            showBrandLogo
+              ? "bg-white border border-border/80 shadow-sm p-1.5"
+              : "bg-primary/10 border border-primary/[0.10] text-2xl group-hover:bg-primary/15"
+          }`}
           aria-hidden="true"
         >
-          {categoryIcon}
+          {showBrandLogo ? (
+            <img
+              src={brandLogoUrl}
+              alt=""
+              className="w-full h-full object-contain"
+              loading="lazy"
+              onError={() => setLogoFailed(true)}
+            />
+          ) : (
+            categoryIcon
+          )}
         </div>
 
         {product.categoryNameEn && (
@@ -969,14 +1065,18 @@ function ProductCard({ product, categoryIcon, onOrder, onFormOrder }: {
           </p>
         )}
 
-        <h3 className={`text-lg font-bold text-foreground leading-snug ${product.badge ? "pr-16" : ""}`}>
-          <a href={productUrl} className="hover:text-primary transition-colors">
-            {product.nameEn}
-          </a>
-        </h3>
-        {product.nameBn && (
-          <p className="text-sm text-muted-foreground font-bn mt-0.5 leading-relaxed">{product.nameBn}</p>
-        )}
+        {/* Fixed-height title block keeps price rows and dividers aligned
+            across all cards in a row, regardless of name length. */}
+        <div className="min-h-[4.75rem]">
+          <h3 className={`text-lg font-bold text-foreground leading-snug line-clamp-2 ${product.badge || featured ? "pr-16" : ""}`}>
+            <Link href={`/products/${product.id}`} className="hover:text-primary transition-colors">
+              {product.nameEn}
+            </Link>
+          </h3>
+          {product.nameBn && (
+            <p className="text-sm text-muted-foreground font-bn mt-0.5 leading-relaxed line-clamp-1">{product.nameBn}</p>
+          )}
+        </div>
 
         <div className="mt-2 flex items-baseline gap-2">
           <span className={`font-bold tracking-tight ${priceIsFree ? "text-sm text-muted-foreground" : "text-2xl text-foreground"}`}>
@@ -990,11 +1090,11 @@ function ProductCard({ product, categoryIcon, onOrder, onFormOrder }: {
 
       <div className="mx-4 md:mx-5 h-px bg-border/50" />
 
-      {/* Description */}
+      {/* Description — flex-1 pushes the buttons to the card bottom */}
       <div className="flex-1 px-4 py-2 md:px-5 md:py-3">
         <div className="space-y-1.5">
           {product.descriptionEn && (
-            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{product.descriptionEn}</p>
+            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{product.descriptionEn}</p>
           )}
           {product.descriptionBn && (
             <p className="text-sm text-muted-foreground font-bn leading-relaxed line-clamp-2">{product.descriptionBn}</p>
