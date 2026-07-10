@@ -34,8 +34,8 @@ const BRAND_RULES: BrandRule[] = [
   { keywords: ["perflexity"], slug: "perplexity" },
 
   // Dev tools
-  { keywords: ["github copilot"], slug: "github-copilot" },
-  { keywords: ["copilot"], slug: "github-copilot" },
+  { keywords: ["github copilot"], slug: "github-copilot", variant: "light" },
+  { keywords: ["copilot"], slug: "github-copilot", variant: "light" },
   { keywords: ["github"], slug: "github" },
   { keywords: ["replit"], slug: "replit" },
   { keywords: ["windsurf"], slug: "windsurf" },
@@ -52,6 +52,21 @@ const BRAND_RULES: BrandRule[] = [
 
   // Finance
   { keywords: ["binance"], slug: "binance" },
+];
+
+/**
+ * Brands showcased in the hero "trusted brands" strip.
+ * Order matters — most recognizable first.
+ */
+export const HERO_BRANDS: { name: string; url: string }[] = [
+  { name: "ChatGPT", url: `${CDN_BASE}/openai/light.svg` },
+  { name: "Gemini", url: `${CDN_BASE}/gemini-google/default.svg` },
+  { name: "Canva", url: `${CDN_BASE}/canva/default.svg` },
+  { name: "DigitalOcean", url: `${CDN_BASE}/digitalocean/default.svg` },
+  { name: "GitHub Copilot", url: `${CDN_BASE}/github-copilot/light.svg` },
+  { name: "Grok", url: `${CDN_BASE}/grok/light.svg` },
+  { name: "Perplexity", url: `${CDN_BASE}/perplexity/default.svg` },
+  { name: "Azure", url: `${CDN_BASE}/azure/default.svg` },
 ];
 
 /**
