@@ -551,8 +551,8 @@ export default function Home() {
           </div>
 
           <Tabs defaultValue="all" value={activeCategory} onValueChange={v => { setActiveCategory(v); setSearchQuery(""); }} className="w-full">
-            <div className="flex justify-center mb-8 md:mb-10 overflow-x-auto pb-1 scrollbar-hide">
-              <TabsList className="h-auto p-1 bg-card border border-border/60 rounded-xl inline-flex gap-0.5 shadow-sm">
+            <div className="flex justify-center mb-8 md:mb-10 pb-1">
+              <TabsList className="h-auto p-1 bg-card border border-border/60 rounded-xl flex flex-wrap justify-center gap-0.5 shadow-sm max-w-full">
                 <TabsTrigger
                   value="all"
                   className="rounded-lg px-3.5 md:px-5 py-2.5 text-sm font-medium text-muted-foreground transition-all
