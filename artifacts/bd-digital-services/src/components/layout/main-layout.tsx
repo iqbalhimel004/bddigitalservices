@@ -158,7 +158,8 @@ export function MainLayout({ children }: MainLayoutProps) {
         {/* Top accent line */}
         <div className="h-[2px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
 
-        <div className="relative container mx-auto px-4 py-8 md:py-10">
+        {/* Extra bottom padding on mobile keeps the copyright row clear of the floating buttons */}
+        <div className="relative container mx-auto px-4 pt-8 pb-24 md:py-10">
 
           {/* Row 1: Brand + Social buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-5">
@@ -168,7 +169,8 @@ export function MainLayout({ children }: MainLayoutProps) {
               </div>
               <p className="text-[11px] text-slate-500 tracking-wide hidden sm:block">Bangladesh&apos;s Trusted Digital Marketplace</p>
             </div>
-            <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2">
+            {/* md:pr-16 keeps the right-most social button clear of the fixed floating action buttons */}
+            <div className="flex flex-wrap justify-center sm:justify-end items-center gap-2 md:pr-16">
               <a
                 href={whatsappLink}
                 target="_blank"
@@ -209,7 +211,10 @@ export function MainLayout({ children }: MainLayoutProps) {
                   aria-label="X"
                   className="flex items-center gap-1.5 bg-[#1D9BF0] text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-[#1a8cd8] hover:scale-105 transition-all"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  {/* X (Twitter) brand logo — lucide's "X" is a close icon, not the brand mark */}
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z" />
+                  </svg>
                   X
                 </a>
               )}
@@ -264,7 +269,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           <div className="w-full h-px bg-white/[0.07] mb-4" />
 
           {/* Row 3: Copyright + Trust note */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs text-slate-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs text-slate-500 pr-12 md:pr-16">
             <span>&copy; {new Date().getFullYear()} {settings?.siteName || "BD Digital Services"}. All rights reserved.</span>
             <span className="font-bn">বাংলাদেশের যাচাইকৃত ডিজিটাল মার্কেটপ্লেস — ১০০% নিরাপদ ও বিশ্বস্ত লেনদেন।</span>
           </div>
@@ -272,35 +277,36 @@ export function MainLayout({ children }: MainLayoutProps) {
         </div>
       </footer>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-24 md:bottom-6 right-4 md:right-6 flex flex-col gap-4 z-50">
+      {/* Floating Action Buttons — anchored to the bottom-right corner and kept
+          compact on small screens so they don't overlap product card buttons. */}
+      <div className="fixed bottom-4 md:bottom-6 right-3 md:right-6 flex flex-col gap-2.5 md:gap-4 z-50">
         <a
           href={telegramLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#0088cc] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
+          className="bg-[#0088cc] text-white p-2.5 md:p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
           aria-label="Telegram"
         >
-          <Send className="w-5 h-5" />
+          <Send className="w-4 h-4 md:w-5 md:h-5" />
         </a>
         <a
           href={whatsappLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-[#22C55E] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
+          className="bg-[#22C55E] text-white p-2.5 md:p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
           aria-label="WhatsApp"
         >
-          <MessageCircle className="w-5 h-5" />
+          <MessageCircle className="w-4 h-4 md:w-5 md:h-5" />
         </a>
         {messengerLink && (
           <a
             href={messengerLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-[#0084FF] text-white p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
+            className="bg-[#0084FF] text-white p-2.5 md:p-3 rounded-full shadow-lg hover:scale-105 transition-transform"
             aria-label="Messenger"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg className="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M12 2C6.36 2 2 6.13 2 11.7c0 2.9 1.17 5.52 3.07 7.38.15.14.24.34.24.56l.05 1.76a.8.8 0 001.12.7l1.96-.87a.8.8 0 01.54-.04 10.28 10.28 0 002.97.43c5.64 0 10-4.13 10-9.7S17.64 2 12 2zm5.98 7.55l-2.93 4.64a1.5 1.5 0 01-2.16.4l-2.33-1.75a.6.6 0 00-.72 0l-3.15 2.39c-.42.32-.97-.17-.7-.63l2.93-4.64a1.5 1.5 0 012.16-.4l2.33 1.75a.6.6 0 00.72 0l3.15-2.39c.42-.32.97.17.7.63z" />
             </svg>
           </a>

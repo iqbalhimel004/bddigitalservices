@@ -146,16 +146,18 @@ export default function Home() {
   }, [categories]);
 
   const displayedProducts = useMemo(() => {
-    const base = products ?? [];
-    if (!searchQuery.trim()) return base;
+    if (!searchQuery.trim()) return products ?? [];
+    // Search across ALL active products (every category), not just the active
+    // tab — otherwise users searching from a category tab would wrongly see
+    // "no results" for products that live in other categories.
     const q = searchQuery.toLowerCase().trim();
-    return base.filter(p =>
+    return (allActiveProducts ?? []).filter(p =>
       p.nameEn.toLowerCase().includes(q) ||
       (p.nameBn && p.nameBn.includes(q)) ||
       (p.descriptionEn && p.descriptionEn.toLowerCase().includes(q)) ||
       (p.descriptionBn && p.descriptionBn.includes(q))
     );
-  }, [products, searchQuery]);
+  }, [products, allActiveProducts, searchQuery]);
 
   const createOrderMutation = useCreateOrder();
 
@@ -618,6 +620,11 @@ export default function Home() {
             </div>
 
             <div className="min-h-[400px]">
+              {searchQuery.trim() && !isAllCategory && (
+                <p className="text-center text-xs text-muted-foreground mb-4">
+                  Showing search results from all categories / <span className="font-bn">সকল ক্যাটাগরি থেকে ফলাফল দেখানো হচ্ছে</span>
+                </p>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                 {displayedProducts.map(product => (
                   <ProductCard
