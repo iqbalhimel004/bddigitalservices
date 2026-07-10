@@ -176,6 +176,21 @@ export default function Home() {
       toast({ title: "Please select a product and payment method", variant: "destructive" });
       return;
     }
+    // Validate Bangladeshi mobile numbers. Must mirror the server's
+    // normalizeBdPhone rule in api-server/src/routes/orders.ts exactly
+    // (including Bengali digit support), so the client never accepts a
+    // number the server would reject, or vice versa.
+    const normalizedPhone = phone
+      .replace(/[\u09E6-\u09EF]/g, (d) => String(d.charCodeAt(0) - 0x09e6))
+      .replace(/[\s()-]/g, "");
+    if (!/^(?:\+?880|880)?01[3-9]\d{8}$/.test(normalizedPhone)) {
+      toast({
+        title: "Invalid phone number",
+        description: "সঠিক মোবাইল নম্বর দিন (যেমন: 01712345678)",
+        variant: "destructive",
+      });
+      return;
+    }
     createOrderMutation.mutate(
       {
         data: {
@@ -211,7 +226,17 @@ export default function Home() {
     let msg: string;
     if (product) {
       const template = settings?.whatsappProductMsg || "Hello BD Digital Services, I want to order: {product} (Price: ৳{price}). Please guide me.";
-      msg = template.replace("{product}", product.nameEn).replace("{price}", String(product.priceBdt));
+      const priceNum = parseFloat(String(product.priceBdt ?? 0));
+      if (priceNum > 0) {
+        msg = template.replace("{product}", product.nameEn).replace("{price}", String(product.priceBdt));
+      } else {
+        // "Contact for Price" products: strip the price part (e.g. "(Price: ৳{price})")
+        // so we never send "Price: ৳0.00" to the customer.
+        msg = template
+          .replace(/\s*\([^()]*\{price\}[^()]*\)/, "")
+          .replace(/\{price\}/g, "")
+          .replace("{product}", product.nameEn);
+      }
     } else {
       msg = settings?.whatsappGenericMsg || "Hello BD Digital Services, I want to order.";
     }
@@ -857,7 +882,7 @@ export default function Home() {
                       </div>
                       <div className="space-y-1.5">
                         <Label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Phone / WhatsApp *</Label>
-                        <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="01XXX-XXXXXX" className="bg-muted/30 border-border/60 focus-visible:ring-primary/20 focus-visible:border-primary/40" />
+                        <Input id="phone" type="tel" inputMode="tel" value={phone} onChange={e => setPhone(e.target.value)} required placeholder="01XXX-XXXXXX" className="bg-muted/30 border-border/60 focus-visible:ring-primary/20 focus-visible:border-primary/40" />
                       </div>
                     </div>
 

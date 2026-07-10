@@ -14,7 +14,8 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { theme, toggleTheme } = useTheme();
 
   const whatsappLink = settings?.whatsapp || "https://wa.me/8801572792499";
-  const telegramLink = settings?.telegram || "https://t.me/+8801572792499";
+  // Default must match the JSON-LD default in home.tsx; t.me/+<phone> is not a valid username link.
+  const telegramLink = settings?.telegram || "https://t.me/bddigitalservices";
   const facebookLink = settings?.facebook || "";
   const messengerLink = settings?.messenger || "";
   const twitterLink = settings?.twitter || "";
