@@ -41,9 +41,11 @@ const trackLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: "Too many tracking requests." },
   keyGenerator: (req) => {
-    const forwarded = req.headers["x-forwarded-for"];
-    const ip = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.ip ?? "unknown";
-    return ipKeyGenerator(ip);
+    // Use req.ip, which respects the app's "trust proxy" setting and cannot
+    // be spoofed by a client-supplied X-Forwarded-For header. Manually taking
+    // the first (leftmost) X-Forwarded-For entry let clients forge any IP to
+    // bypass rate limiting.
+    return ipKeyGenerator(req.ip ?? "unknown");
   },
 });
 
@@ -104,8 +106,9 @@ router.post("/track", trackLimiter, async (req: Request, res: Response): Promise
     const deviceType = parseDeviceType(ua);
     const browser = parseBrowser(ua);
 
-    const forwarded = req.headers["x-forwarded-for"];
-    const rawIp = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : (req.ip ?? "unknown");
+    // req.ip respects "trust proxy" and cannot be spoofed via a forged
+    // X-Forwarded-For header, keeping visitor analytics and geolocation honest.
+    const rawIp = req.ip ?? "unknown";
     const ipHash = hashIp(rawIp);
 
     let referrerDomain: string | null = null;
