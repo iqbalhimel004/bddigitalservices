@@ -17,7 +17,7 @@ PORT=8080
 NODE_ENV=production
 ADMIN_USERNAME=your-admin-email@example.com
 ADMIN_PASSWORD_HASH=your-bcrypt-hash
-ADMIN_SECRET=your-random-secret-key
+IP_HASH_SALT=your-random-64-char-hex-salt
 BASE_PATH=/
 ```
 
@@ -25,7 +25,11 @@ BASE_PATH=/
 > ```bash
 > node -e "const b=require('bcryptjs'); console.log(b.hashSync('your-password', 12))"
 > ```
-> Always change `ADMIN_PASSWORD_HASH` and `ADMIN_SECRET` before going live.
+> `IP_HASH_SALT` is a random hex string used to anonymize visitor IPs for analytics. Generate one with:
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+> ```
+> Always set `ADMIN_PASSWORD_HASH` and `IP_HASH_SALT` before going live. Admin sessions are stored server-side in the database (no signing secret is used); to force-invalidate all sessions, delete the rows in the `admin_sessions` table.
 
 ### One-Time Setup
 
@@ -70,7 +74,7 @@ pnpm start
 
 - URL: `https://yourdomain.com/admin`
 - Credentials: set via `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` (bcrypt hash) env vars
-- **Always set `ADMIN_PASSWORD_HASH` and `ADMIN_SECRET` in production before launch**
+- **Always set `ADMIN_PASSWORD_HASH` in production before launch**
 
 ### Seeding
 

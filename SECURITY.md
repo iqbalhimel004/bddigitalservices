@@ -11,15 +11,20 @@ The application code includes rate limiting at the API level, but for production
 
 This gives you: DDoS mitigation, IP reputation filtering, SSL termination, and global CDN caching with zero extra cost.
 
-## Changing the Admin Secret
+## Revoking Admin Sessions & Rotating Credentials
 
-The `ADMIN_SECRET` environment variable signs all admin session tokens. Rotate it if you suspect compromise:
+Admin sessions are stored **server-side in the database** (`admin_sessions` table) as random opaque IDs delivered via an httpOnly cookie — there is no signing secret. If you suspect compromise:
 
-1. In your hosting environment (Replit Secrets / Hostinger environment vars), update `ADMIN_SECRET` to a new random string (at least 32 characters).
-2. Restart the API server.
-3. All existing admin tokens will be immediately invalidated — log in again to get a new token.
+1. **Invalidate all active sessions:** delete every row in the `admin_sessions` table (`DELETE FROM admin_sessions;`) or restart after rotating credentials. All admins must log in again.
+2. **Rotate the admin password:** generate a new bcrypt hash and update the `ADMIN_PASSWORD_HASH` environment variable:
+   ```bash
+   node -e "const b=require('bcryptjs'); console.log(b.hashSync('new-password', 12))"
+   ```
+3. Also rotate `ADMIN_USERNAME` if credentials may have been exposed, then restart the API server.
 
-Also rotate `ADMIN_USERNAME` and `ADMIN_PASSWORD` if credentials may have been exposed.
+## Visitor IP Anonymization
+
+Visitor analytics never store raw IP addresses — IPs are hashed with SHA-256 using the `IP_HASH_SALT` environment variable. Set it to a random 64-character hex string and keep it out of version control. Rotating it resets unique-visitor de-duplication but does not affect any other functionality.
 
 ## Hostinger Firewall Recommendations
 

@@ -87,7 +87,5 @@ externalPort = 5173
 [nix]
 channel = "stable-25_05"
 
-[userenv]
-
-[userenv.shared]
-IP_HASH_SALT = "69e184f594803fcc06247d65462a15dcab5c6983bba9b611482719ede34f5280"
+# IP_HASH_SALT must be provided as a secret environment variable
+# (Replit Secrets / Heroku Config Vars) — never commit its value to git.
