@@ -111,6 +111,7 @@ async function getProductFull(id: number) {
     priceBdt: productsTable.priceBdt,
     priceUsd: productsTable.priceUsd,
     badge: productsTable.badge,
+    logo: productsTable.logo,
     isActive: productsTable.isActive,
     sortOrder: productsTable.sortOrder,
     createdAt: productsTable.createdAt,
@@ -136,6 +137,7 @@ router.post("/products", async (req, res): Promise<void> => {
     priceBdt: toAsciiDigits(parsed.data.priceBdt) || "0",
     priceUsd: toAsciiDigits(parsed.data.priceUsd) || "0",
     badge: parsed.data.badge ?? null,
+    logo: parsed.data.logo ?? null,
     isActive: parsed.data.isActive ?? true,
     sortOrder: parsed.data.sortOrder ?? 0,
   }).returning();
@@ -156,6 +158,7 @@ router.put("/products/:id", async (req, res): Promise<void> => {
     priceBdt: toAsciiDigits(parsed.data.priceBdt) || "0",
     priceUsd: toAsciiDigits(parsed.data.priceUsd) || "0",
     badge: parsed.data.badge ?? null,
+    logo: parsed.data.logo ?? null,
     // Same fix as categories: don't reset isActive/sortOrder when omitted.
     ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {}),
     ...(parsed.data.sortOrder !== undefined ? { sortOrder: parsed.data.sortOrder } : {}),

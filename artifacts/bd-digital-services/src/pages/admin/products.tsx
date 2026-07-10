@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { AdminLayout } from "@/components/layout/admin-layout";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -44,7 +44,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Edit, Trash2, AlertCircle, Upload, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Product, CreateProductBody } from "@workspace/api-client-react";
 
@@ -63,7 +63,37 @@ export default function AdminProducts() {
   const [priceBdt, setPriceBdt] = useState("");
   const [priceUsd, setPriceUsd] = useState("");
   const [badge, setBadge] = useState("");
+  const [logo, setLogo] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
+  /** Resize an uploaded image to a small square PNG data-URL so it fits comfortably in the DB. */
+  const handleLogoFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "ভুল ফাইল", description: "শুধুমাত্র ছবি (PNG/JPG/SVG/WebP) আপলোড করুন।", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 128;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        setLogo(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => {
+        toast({ title: "আপলোড ব্যর্থ", description: "ছবিটি পড়া যায়নি। অন্য ফাইল চেষ্টা করুন।", variant: "destructive" });
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const { ready, username } = useAdminAuth();
 
@@ -90,6 +120,7 @@ export default function AdminProducts() {
     setPriceBdt("");
     setPriceUsd("");
     setBadge("");
+    setLogo("");
     setIsActive(true);
   };
 
@@ -103,6 +134,7 @@ export default function AdminProducts() {
     setPriceBdt(product.priceBdt);
     setPriceUsd(product.priceUsd);
     setBadge(product.badge || "");
+    setLogo(product.logo || "");
     setIsActive(product.isActive);
     setIsModalOpen(true);
   };
@@ -124,6 +156,7 @@ export default function AdminProducts() {
       priceBdt,
       priceUsd: priceUsd.trim() || "0",
       badge: badge || null,
+      logo: logo || null,
       isActive,
     };
 
@@ -246,6 +279,58 @@ export default function AdminProducts() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label>Product Logo</Label>
+                    <div className="flex items-center gap-4 rounded-lg border border-border/60 bg-muted/20 p-3">
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background overflow-hidden">
+                        {logo ? (
+                          <img src={logo || "/placeholder.svg"} alt="Product logo preview" className="h-full w-full object-contain p-1.5" />
+                        ) : (
+                          <span className="text-3xl leading-none" aria-hidden="true">
+                            {categories?.find((c) => c.id.toString() === categoryId)?.icon || "🏷️"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
+                            <Upload className="mr-1.5 h-3.5 w-3.5" />
+                            {logo ? "Change Logo" : "Upload Logo"}
+                          </Button>
+                          {logo && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive bg-transparent"
+                              onClick={() => {
+                                setLogo("");
+                                if (logoInputRef.current) logoInputRef.current.value = "";
+                              }}
+                            >
+                              <X className="mr-1.5 h-3.5 w-3.5" /> Remove
+                            </Button>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground font-bn leading-relaxed">
+                          {logo
+                            ? "কাস্টম লগো ব্যবহার হবে।"
+                            : "লগো আপলোড না করলে ক্যাটাগরির লগো অটোমেটিক ব্যবহার হবে।"}
+                        </p>
+                      </div>
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleLogoFile(file);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="descriptionEn">Description (English)</Label>
                     <Textarea id="descriptionEn" value={descriptionEn} onChange={(e) => setDescriptionEn(e.target.value)} rows={3} />
                   </div>
@@ -308,8 +393,23 @@ export default function AdminProducts() {
                 products?.map((product) => (
                   <TableRow key={product.id} className="border-b border-border/30 hover:bg-muted/30 transition-colors last:border-0">
                     <TableCell className="pl-4 py-3.5">
-                      <div className="font-medium text-sm">{product.nameEn}</div>
-                      <div className="text-xs text-muted-foreground font-bn">{product.nameBn}</div>
+                      <div className="flex items-center gap-3">
+                        {product.logo ? (
+                          <img
+                            src={product.logo || "/placeholder.svg"}
+                            alt=""
+                            className="h-8 w-8 shrink-0 rounded-md border border-border/60 bg-background object-contain p-0.5"
+                          />
+                        ) : (
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border/40 bg-muted/30 text-base" aria-hidden="true">
+                            {categories?.find((c) => c.id === product.categoryId)?.icon || "🏷️"}
+                          </span>
+                        )}
+                        <div>
+                          <div className="font-medium text-sm">{product.nameEn}</div>
+                          <div className="text-xs text-muted-foreground font-bn">{product.nameBn}</div>
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground py-3.5">{product.categoryNameEn || "Uncategorized"}</TableCell>
                     <TableCell className="py-3.5">

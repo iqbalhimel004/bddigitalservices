@@ -51,6 +51,7 @@ export interface Product {
   priceUsd: string;
   /** @nullable */
   badge?: string | null;
+  logo?: string | null;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -69,6 +70,7 @@ export interface CreateProductBody {
   priceUsd: string;
   /** @nullable */
   badge?: string | null;
+  logo?: string | null;
   isActive?: boolean;
   sortOrder?: number;
 }

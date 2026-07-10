@@ -967,9 +967,10 @@ function ProductCard({ product, categoryIcon, onOrder, onFormOrder, featured = f
   const priceNum = parseFloat(product.priceBdt || "0");
   const priceDisplay = !priceNum ? "Contact for Price" : `৳${product.priceBdt}`;
   const priceIsFree = !priceNum;
-  const brandLogoUrl = getBrandLogoUrl(product.nameEn);
+  // Priority: admin-uploaded logo > auto brand logo > category icon
+  const brandLogoUrl = product.logo || getBrandLogoUrl(product.nameEn);
   const [logoFailed, setLogoFailed] = useState(false);
-  const showBrandLogo = brandLogoUrl != null && !logoFailed;
+  const showBrandLogo = brandLogoUrl != null && brandLogoUrl !== "" && !logoFailed;
 
   return (
     <div className={`group relative flex flex-col h-full bg-card rounded-xl overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-300 ${
