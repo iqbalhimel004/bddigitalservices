@@ -32,6 +32,7 @@ import {
   Search, Users, Clock, Truck, X
 } from "lucide-react";
 import type { Product } from "@workspace/api-client-react";
+import { getBrandLogoUrl } from "@/lib/brand-logos";
 
 const FALLBACK_FAQS = [
   {
@@ -940,6 +941,9 @@ function ProductCard({ product, categoryIcon, onOrder, onFormOrder }: {
   const priceNum = parseFloat(product.priceBdt || "0");
   const priceDisplay = !priceNum ? "Contact for Price" : `৳${product.priceBdt}`;
   const priceIsFree = !priceNum;
+  const brandLogoUrl = getBrandLogoUrl(product.nameEn);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const showBrandLogo = brandLogoUrl != null && !logoFailed;
 
   return (
     <div className="group relative flex flex-col h-full bg-card border border-border/70 rounded-xl overflow-hidden hover:border-primary/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-primary/[0.09] transition-all duration-300">
@@ -955,12 +959,26 @@ function ProductCard({ product, categoryIcon, onOrder, onFormOrder }: {
           </span>
         )}
 
-        {/* Category icon */}
+        {/* Brand logo (falls back to category icon) */}
         <div
-          className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/[0.10] flex items-center justify-center text-2xl mb-2 select-none group-hover:bg-primary/15 transition-colors"
+          className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 select-none transition-colors ${
+            showBrandLogo
+              ? "bg-white border border-border/80 shadow-sm p-1.5"
+              : "bg-primary/10 border border-primary/[0.10] text-2xl group-hover:bg-primary/15"
+          }`}
           aria-hidden="true"
         >
-          {categoryIcon}
+          {showBrandLogo ? (
+            <img
+              src={brandLogoUrl}
+              alt=""
+              className="w-full h-full object-contain"
+              loading="lazy"
+              onError={() => setLogoFailed(true)}
+            />
+          ) : (
+            categoryIcon
+          )}
         </div>
 
         {product.categoryNameEn && (

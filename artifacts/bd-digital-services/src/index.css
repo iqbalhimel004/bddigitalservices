@@ -138,7 +138,9 @@
   --sidebar-accent-foreground: 227 36% 16%;
   --sidebar-ring: 252 75% 60%;
 
-  --app-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  /* 'Hind Siliguri' is the Bengali fallback: Inter has no Bengali glyphs
+     (including the ৳ taka sign), which previously rendered as broken boxes. */
+  --app-font-sans: 'Inter', 'Hind Siliguri', system-ui, -apple-system, sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: 'JetBrains Mono', Menlo, monospace;
 
