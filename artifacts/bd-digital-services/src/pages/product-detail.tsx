@@ -116,7 +116,7 @@ export default function ProductDetail() {
 
           <div className="flex flex-col sm:flex-row gap-3 mt-8">
             <Button asChild className="flex-1">
-              <Link href="/#order">Place Order</Link>
+              <Link href="/#order-form">Place Order</Link>
             </Button>
             <Button asChild variant="outline" className="flex-1">
               <a href={whatsappLink} target="_blank" rel="noopener noreferrer">

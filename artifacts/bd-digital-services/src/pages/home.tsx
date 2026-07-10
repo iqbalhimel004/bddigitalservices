@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { Link } from "wouter";
 import { Helmet } from "react-helmet-async";
 import { SeoHead } from "@/components/seo-head";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -117,6 +118,21 @@ export default function Home() {
   );
 
   const products = isAllCategory ? allActiveProducts : filteredProducts;
+
+  // When arriving with a hash (e.g. /#order-form from a product page), scroll to
+  // the section after the products data has rendered. Native browser scrolling
+  // doesn't work reliably here because sections render/shift after data loads.
+  const productsLoaded = allActiveProducts !== undefined;
+  useEffect(() => {
+    if (!productsLoaded) return;
+    const hash = window.location.hash.replace("#", "");
+    if (!hash) return;
+    // Wait a frame so the freshly-rendered cards are laid out first.
+    const timer = setTimeout(() => {
+      document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [productsLoaded]);
 
   const selectedProduct = useMemo(
     () => allActiveProducts?.find(p => p.id.toString() === selectedProductId) ?? null,
@@ -516,7 +532,7 @@ export default function Home() {
       )}
 
       {/* Product Catalog */}
-      <section id="products" className="py-16 md:py-24 relative">
+      <section id="products" className="scroll-mt-20 py-16 md:py-24 relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8 md:mb-12">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
@@ -610,7 +626,7 @@ export default function Home() {
       </section>
 
       {/* How to Order */}
-      <section id="how-to-order" className="py-16 md:py-24 bg-muted/20 border-y border-border relative overflow-hidden">
+      <section id="how-to-order" className="scroll-mt-20 py-16 md:py-24 bg-muted/20 border-y border-border relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full bg-primary/[0.04] blur-[80px]" />
         </div>
@@ -726,7 +742,7 @@ export default function Home() {
       </section>
 
       {/* Order Form & Payment Section */}
-      <section id="order-form" className="py-16 md:py-24 relative">
+      <section id="order-form" className="scroll-mt-20 py-16 md:py-24 relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-10 md:mb-14">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
@@ -917,7 +933,7 @@ export default function Home() {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-16 md:py-24 bg-muted/20 border-t border-border">
+      <section id="faq" className="scroll-mt-20 py-16 md:py-24 bg-muted/20 border-t border-border">
         <div className="container mx-auto px-4 max-w-3xl">
           <div className="text-center mb-8 md:mb-12">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4 border border-primary/20 uppercase tracking-widest">
@@ -963,7 +979,6 @@ function ProductCard({ product, categoryIcon, onOrder, onFormOrder, featured = f
   /** Featured (Best Seller) cards get an amber ribbon and a stronger border. */
   featured?: boolean;
 }) {
-  const productUrl = `${import.meta.env.BASE_URL}products/${product.id}`;
   const priceNum = parseFloat(product.priceBdt || "0");
   const priceDisplay = !priceNum ? "Contact for Price" : `৳${product.priceBdt}`;
   const priceIsFree = !priceNum;
@@ -1029,9 +1044,9 @@ function ProductCard({ product, categoryIcon, onOrder, onFormOrder, featured = f
             across all cards in a row, regardless of name length. */}
         <div className="min-h-[4.75rem]">
           <h3 className={`text-lg font-bold text-foreground leading-snug line-clamp-2 ${product.badge || featured ? "pr-16" : ""}`}>
-            <a href={productUrl} className="hover:text-primary transition-colors">
+            <Link href={`/products/${product.id}`} className="hover:text-primary transition-colors">
               {product.nameEn}
-            </a>
+            </Link>
           </h3>
           {product.nameBn && (
             <p className="text-sm text-muted-foreground font-bn mt-0.5 leading-relaxed line-clamp-1">{product.nameBn}</p>

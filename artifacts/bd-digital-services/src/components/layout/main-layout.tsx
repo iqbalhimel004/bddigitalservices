@@ -21,11 +21,14 @@ export function MainLayout({ children }: MainLayoutProps) {
   const instagramLink = settings?.instagram || "";
   const tiktokLink = settings?.tiktok || "";
 
+  // Use "/#section" so these anchors work from every page (e.g. /products/:id),
+  // not only on the homepage. BASE_URL keeps them correct under a sub-path.
+  const base = import.meta.env.BASE_URL;
   const navLinks = [
-    { href: "#products", label: "Products" },
-    { href: "#how-to-order", label: "How to Order" },
-    { href: "#order-form", label: "Order" },
-    { href: "#faq", label: "FAQ" },
+    { href: `${base}#products`, label: "Products" },
+    { href: `${base}#how-to-order`, label: "How to Order" },
+    { href: `${base}#order-form`, label: "Order" },
+    { href: `${base}#faq`, label: "FAQ" },
   ];
 
   return (
@@ -242,9 +245,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* Row 2: Nav links */}
           <nav className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-6">
             {[
-              { href: "#products", label: "Products" },
-              { href: "#how-to-order", label: "How to Order" },
-              { href: "#faq", label: "FAQ" },
+              { href: `${base}#products`, label: "Products" },
+              { href: `${base}#how-to-order`, label: "How to Order" },
+              { href: `${base}#faq`, label: "FAQ" },
             ].map(link => (
               <a
                 key={link.label}
