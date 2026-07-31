@@ -74,7 +74,9 @@ router.get("/analytics/chart", async (req, res): Promise<void> => {
     .groupBy(sql`date_trunc('day', ${pageVisitsTable.createdAt})`)
     .orderBy(sql`date_trunc('day', ${pageVisitsTable.createdAt})`);
 
-  const dataMap = new Map(rows.map((r) => [r.date, Number(r.visits)]));
+  const dataMap = new Map<string, number>(
+    rows.map((r: { date: string; visits: number }) => [r.date, Number(r.visits)]),
+  );
   const result: { date: string; visits: number }[] = [];
   for (let i = period - 1; i >= 0; i--) {
     const d = new Date();
@@ -96,7 +98,7 @@ router.get("/analytics/pages", async (req, res): Promise<void> => {
     .orderBy(desc(count()))
     .limit(limit);
 
-  res.json(rows.map((r) => ({ page: r.page, visits: Number(r.visits) })));
+  res.json(rows.map((r: { page: string; visits: number }) => ({ page: r.page, visits: Number(r.visits) })));
 });
 
 router.get("/analytics/devices", async (_req, res): Promise<void> => {
@@ -106,7 +108,7 @@ router.get("/analytics/devices", async (_req, res): Promise<void> => {
     .groupBy(pageVisitsTable.deviceType)
     .orderBy(desc(count()));
 
-  res.json(rows.map((r) => ({ device: r.device, visits: Number(r.visits) })));
+  res.json(rows.map((r: { device: string | null; visits: number }) => ({ device: r.device, visits: Number(r.visits) })));
 });
 
 router.get("/analytics/referrers", async (req, res): Promise<void> => {
@@ -136,7 +138,7 @@ router.get("/analytics/referrers", async (req, res): Promise<void> => {
     .orderBy(desc(count()))
     .limit(limit);
 
-  res.json(rows.map((r) => ({ referrer: r.referrer, visits: Number(r.visits) })));
+  res.json(rows.map((r: { referrer: string; visits: number }) => ({ referrer: r.referrer, visits: Number(r.visits) })));
 });
 
 router.get("/analytics/countries", async (req, res): Promise<void> => {
@@ -150,7 +152,7 @@ router.get("/analytics/countries", async (req, res): Promise<void> => {
     .orderBy(desc(count()))
     .limit(limit);
 
-  res.json(rows.map((r) => ({ country: r.country as string, visits: Number(r.visits) })));
+  res.json(rows.map((r: { country: string | null; visits: number }) => ({ country: r.country as string, visits: Number(r.visits) })));
 });
 
 router.get("/analytics/recent", async (req, res): Promise<void> => {

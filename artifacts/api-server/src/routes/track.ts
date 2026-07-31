@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 import { db, pageVisitsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
@@ -64,10 +64,21 @@ function parseBrowser(ua: string): string {
   return "Other";
 }
 
+// Resolve the salt once at module load. If IP_HASH_SALT is not configured,
+// fall back to a random per-process salt so visitor tracking keeps working
+// (previously every /track request crashed with a 500). The fallback changes
+// on each restart, which only affects unique-visitor de-duplication accuracy —
+// set IP_HASH_SALT in the environment for stable hashing.
+const ipHashSalt: string = process.env.IP_HASH_SALT ?? randomBytes(32).toString("hex");
+if (!process.env.IP_HASH_SALT) {
+  console.warn(
+    "[track] IP_HASH_SALT is not set — using a random per-process salt. " +
+      "Set IP_HASH_SALT for stable visitor hashing across restarts.",
+  );
+}
+
 function hashIp(ip: string): string {
-  const salt = process.env.IP_HASH_SALT;
-  if (!salt) throw new Error("IP_HASH_SALT environment variable is not set");
-  return createHash("sha256").update(ip + salt).digest("hex").slice(0, 16);
+  return createHash("sha256").update(ip + ipHashSalt).digest("hex").slice(0, 16);
 }
 
 router.post("/track", trackLimiter, async (req: Request, res: Response): Promise<void> => {
